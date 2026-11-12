@@ -7,33 +7,33 @@ Final fit time measures the separately trained final estimator.
 Prediction time includes evaluation inference on the held-out set.
 The three stages are also available independently in summary.csv.
 
-The experiment covers 19 scenarios, four seeds and 16 methods.
-Successful runs: 1216 / 1216.
-Seeds 71 and 97 were not used in the initial v0.2 benchmark.
+The experiment covers 19 scenarios, six seeds and 17 methods.
+Successful runs: 1938 / 1938.
+Seeds 131 and 197 were not used during the v0.3 experiment.
 
 ## Overall ranking for each scenario
 
-| Scenario | Metric | Top three (four-seed mean) | NeuralForest adaptive | Rank | Selection (s) | Final fit (s) | Prediction (s) |
+| Scenario | Metric | Top three (six-seed mean) | NeuralForest calibrated | Rank | Selection (s) | Final fit (s) | Prediction (s) |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
-| correlated_30 | auc | GradientBoosting 0.793, CatBoost 0.792, AdaBoost 0.789 | 0.785 | 6 | 0.68 | 0.20 | 0.023 |
-| distinct_0 | auc | ExtraTrees 0.994, CatBoost 0.993, AdaBoost 0.993 | 0.992 | 4 | 0.29 | 0.05 | 0.009 |
-| distribution_shift | auc | ExtraTrees 0.692, CatBoost 0.687, NeuralForest_Adaptive 0.686 | 0.686 | 3 | 0.55 | 0.10 | 0.015 |
-| identical_100 | logloss | Dummy 0.694, NeuralForest_Adaptive 0.695, NeuralForest_Differentiable 0.695 | 0.695 | 2 | 0.21 | 0.08 | 0.014 |
-| intermediate_45 | auc | CatBoost 0.908, NeuralForest_Adaptive 0.905, GradientBoosting 0.904 | 0.905 | 2 | 0.33 | 0.07 | 0.011 |
-| label_noise_20pct | auc | NeuralForest_Adaptive 0.694, NeuralForest_Differentiable 0.694, ExtraTrees 0.693 | 0.694 | 1 | 0.57 | 0.16 | 0.023 |
-| large_n | auc | CatBoost 0.777, GradientBoosting 0.773, XGBoost 0.773 | 0.770 | 4 | 1.53 | 0.35 | 0.020 |
-| missing_15pct | auc | CatBoost 0.779, GradientBoosting 0.774, NeuralForest_Adaptive 0.773 | 0.773 | 3 | 0.68 | 0.17 | 0.022 |
-| noise_50 | auc | GradientBoosting 0.782, AdaBoost 0.780, CatBoost 0.775 | 0.769 | 8 | 0.91 | 0.24 | 0.030 |
-| nonlinear_xor | f1 | CatBoost 0.998, GradientBoosting 0.997, HistGradientBoosting 0.995 | 0.988 | 7 | 0.48 | 0.12 | 0.019 |
-| overlap_80 | auc | AdaBoost 0.678, CatBoost 0.674, Logistic 0.673 | 0.668 | 5 | 0.30 | 0.08 | 0.012 |
-| presence_bg_1to1 | boyce | NeuralForest_Adaptive 0.996, Logistic 0.994, ExtraTrees 0.993 | 0.996 | 1 | 0.32 | 0.06 | 0.034 |
-| presence_bg_1to5 | boyce | MLP 0.968, NeuralForest_CART 0.965, NeuralForest_Differentiable 0.962 | 0.955 | 5 | 0.84 | 0.23 | 0.025 |
-| pseudoabsence_hard | boyce | Logistic 0.989, AdaBoost 0.809, NeuralForest_Adaptive 0.792 | 0.792 | 3 | 0.34 | 0.06 | 0.022 |
-| rare_10pct | pr_auc | ExtraTrees 0.532, NeuralForest_Adaptive 0.527, Logistic 0.524 | 0.527 | 2 | 0.43 | 0.10 | 0.013 |
-| rare_1pct | pr_auc | Logistic 0.116, AdaBoost 0.111, NeuralForest_Adaptive 0.110 | 0.110 | 3 | 2.83 | 0.74 | 0.021 |
-| rare_3pct | pr_auc | Logistic 0.264, ExtraTrees 0.228, NeuralForest_Adaptive 0.222 | 0.222 | 3 | 0.85 | 0.21 | 0.015 |
-| similar_97 | brier | Dummy 0.250, Logistic 0.251, NeuralForest_Adaptive 0.252 | 0.252 | 3 | 0.22 | 0.08 | 0.013 |
-| small_n | balanced_accuracy | Logistic 0.669, NeuralForest_Adaptive 0.667, AdaBoost 0.665 | 0.667 | 2 | 0.09 | 0.02 | 0.006 |
+| correlated_30 | auc | GradientBoosting 0.798, CatBoost 0.793, XGBoost 0.790 | 0.785 | 6 | 0.52 | 0.16 | 0.016 |
+| distinct_0 | auc | ExtraTrees 0.993, AdaBoost 0.992, CatBoost 0.992 | 0.992 | 6 | 0.43 | 0.06 | 0.011 |
+| distribution_shift | auc | ExtraTrees 0.692, CatBoost 0.687, NeuralForest_Adaptive 0.686 | 0.686 | 3 | 0.37 | 0.08 | 0.012 |
+| identical_100 | logloss | Dummy 0.694, SVM_RBF 0.697, NeuralForest_Differentiable 0.698 | 0.698 | 4 | 0.34 | 0.09 | 0.015 |
+| intermediate_45 | auc | CatBoost 0.907, GradientBoosting 0.904, AdaBoost 0.902 | 0.900 | 4 | 0.48 | 0.08 | 0.013 |
+| label_noise_20pct | auc | ExtraTrees 0.698, NeuralForest_Adaptive 0.697, NeuralForest_Calibrated 0.697 | 0.697 | 2 | 0.56 | 0.16 | 0.023 |
+| large_n | auc | CatBoost 0.779, GradientBoosting 0.775, XGBoost 0.774 | 0.771 | 5 | 1.52 | 0.35 | 0.020 |
+| missing_15pct | auc | CatBoost 0.780, GradientBoosting 0.775, NeuralForest_CART 0.774 | 0.773 | 5 | 0.62 | 0.17 | 0.023 |
+| noise_50 | auc | GradientBoosting 0.786, AdaBoost 0.781, CatBoost 0.778 | 0.771 | 9 | 0.63 | 0.21 | 0.022 |
+| nonlinear_xor | f1 | GradientBoosting 0.997, CatBoost 0.997, HistGradientBoosting 0.994 | 0.984 | 8 | 0.34 | 0.10 | 0.013 |
+| overlap_80 | auc | CatBoost 0.670, AdaBoost 0.667, GradientBoosting 0.665 | 0.663 | 5 | 0.44 | 0.09 | 0.014 |
+| presence_bg_1to1 | boyce | Logistic 0.995, ExtraTrees 0.992, NeuralForest_Differentiable 0.991 | 0.990 | 5 | 0.24 | 0.05 | 0.021 |
+| presence_bg_1to5 | boyce | NeuralForest_Adaptive 0.985, NeuralForest_Calibrated 0.985, NeuralForest_Differentiable 0.973 | 0.985 | 1 | 0.66 | 0.20 | 0.023 |
+| pseudoabsence_hard | boyce | Logistic 0.988, NeuralForest_Adaptive 0.804, NeuralForest_Calibrated 0.804 | 0.804 | 2 | 0.26 | 0.06 | 0.020 |
+| rare_10pct | pr_auc | ExtraTrees 0.520, Logistic 0.511, NeuralForest_Adaptive 0.508 | 0.508 | 3 | 0.40 | 0.10 | 0.012 |
+| rare_1pct | pr_auc | Logistic 0.196, NeuralForest_Adaptive 0.186, NeuralForest_Calibrated 0.186 | 0.186 | 2 | 2.90 | 0.74 | 0.022 |
+| rare_3pct | pr_auc | Logistic 0.290, NeuralForest_Adaptive 0.267, NeuralForest_Calibrated 0.267 | 0.267 | 2 | 0.86 | 0.21 | 0.015 |
+| similar_97 | brier | Dummy 0.250, AdaBoost 0.252, SVM_RBF 0.252 | 0.252 | 4 | 0.35 | 0.09 | 0.014 |
+| small_n | balanced_accuracy | AdaBoost 0.662, Logistic 0.660, NeuralForest_Differentiable 0.659 | 0.659 | 4 | 0.10 | 0.02 | 0.007 |
 
 ## Interpretation
 
@@ -44,12 +44,12 @@ uses a smooth listwise ranking surrogate, while AUC and Boyce use
 a pairwise logistic surrogate. Test performance always uses the
 original metric, not its surrogate.
 
-NeuralForest_Adaptive includes ridge-regularized linear and constant
+NeuralForest_Adaptive and NeuralForest_Calibrated include ridge-regularized linear and constant
 experts. Its performance must be interpreted as a hybrid ensemble,
 not attributed exclusively to learned tree divisions.
 
 Historical seed-matched v0.2 comparisons are in
-paired_v02_comparison.csv. Means over seeds 71 and 97 appear in
+paired_v02_comparison.csv. Means over seeds 131 and 197 appear in
 new_seed_primary_mean and new_seed_rank in summary.csv.
 
 Presence-background training negatives are not confirmed human
@@ -64,17 +64,7 @@ These synthetic datasets do not establish universal superiority.
 
 - all_runs.csv: all metrics, configurations and timed stages
 - summary.csv: mean, standard deviation, ranking and phase timings
-- paired_v02_comparison.csv: 480 original-seed pairs (17 and 43)
-- COMPUTE_TIME.md: timing comparison for all 16 algorithms
+- paired_v02_comparison.csv: paired original-seed differences
+- paired_v03_comparison.csv: 4-seed paired v0.3 versus v0.4 comparison
 - manifest.json: provenance, seeds, failures and environment
 - benchmark/README.md: full experimental protocol and limitations
-
-## Before and after the audit
-
-The original version 0.2 outcomes were archived before the changes. The new release fixes duplicate weight application, training/validation preprocessing leakage and the order of refitting versus soft-tree model selection. It adds a differentiated average-precision surrogate and a validation-selected ridge linear expert.
-
-For the 3-percent positive-class scenario, the old differentiable forest obtained 0.132 mean average precision across its two historical seeds. The corrected differentiable forest obtains 0.207 across four seeds, and the adaptive hybrid obtains 0.222. Logistic regression remains stronger at 0.264.
-
-The 1:5 presence-background Boyce score of the original differentiable forest was 0.995 across two seeds; the audited differentiable forest is at 0.962 across four seeds and the adaptive hybrid at 0.955. This decline must not be hidden. The validation/refit procedure and weighting strategy changed, so the scores are not strictly a single-component ablation.
-
-The adaptive hybrid leads on two of 19 scenario primary metrics. Its improvement relative to the previous release does not establish dominance across all distributions.

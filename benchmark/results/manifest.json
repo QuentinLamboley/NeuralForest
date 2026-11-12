@@ -5,11 +5,13 @@
     17,
     43,
     71,
-    97
+    97,
+    131,
+    197
   ],
   "new_confirmation_seeds": [
-    71,
-    97
+    131,
+    197
   ],
   "scenarios": [
     "correlated_30",
@@ -44,20 +46,17 @@
     "MLP",
     "NeuralForest_Adaptive",
     "NeuralForest_CART",
+    "NeuralForest_Calibrated",
     "NeuralForest_Differentiable",
     "RandomForest",
     "SVM_RBF",
     "XGBoost",
     "ranger"
   ],
-  "rows": 1216,
-  "successes": 1216,
+  "rows": 1938,
+  "successes": 1938,
   "failures": [],
   "paired_old_rows": 480,
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
-  "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
-  "measured_benchmark_run_id": 43237368349,
-  "results_publication_run_id": 43239562322,
-  "n_scenarios": 19,
-  "n_models": 16
+  "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43"
 }
