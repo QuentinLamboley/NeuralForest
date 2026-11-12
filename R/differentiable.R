@@ -58,7 +58,8 @@ nf_soft_probabilities <- function(model,X) {
   raw <- matrix(raw,nrow=nrow(Z),ncol=length(model$models))
   if(model$task=="regression")
     return(matrix(raw[,1]*model$y_scale+model$y_center,ncol=1))
-  raw <- pmax(1e-8,pmin(1-1e-8,raw))
+  raw[raw<1e-8] <- 1e-8
+  raw[raw>1-1e-8] <- 1-1e-8
   raw / pmax(rowSums(raw),1e-8)
 }
 
