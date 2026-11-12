@@ -51,6 +51,9 @@ Or install locally after cloning:
     predict(fit, iris[-id,1:4], type = "prob")
     nf_importance(fit)
     nf_diagnostics(fit)
+    nf_uncertainty(fit,iris[-id,1:4],measure="entropy")
+    nf_permutation_importance(fit,iris[-id,1:4],iris$Species[-id],
+                              repeats=3)
     nf_metrics("classification")
 
 Regression:
@@ -98,8 +101,9 @@ ranger is optional and installed separately for that comparison.
    can be disabled to compare a conventional forest baseline.
 5. **Round selection**: disjoint validation set used to choose the best
    forest round by a user-selected metric; early stopping.
-6. **Model analysis**: impurity-based importance, per-tree predictions,
-   selection history and OOB coverage.
+6. **Model analysis**: native impurity importance, holdout permutation
+   importance, uncalibrated ensemble disagreement, per-tree predictions,
+   feature distribution profiles, selection history and OOB coverage.
 7. **Tuning and comparisons**: random/grid search with outer CV, optional
    group-aware splitting, ranger benchmark.
 

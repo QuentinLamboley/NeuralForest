@@ -70,6 +70,17 @@ nf_control <- function(
 
 nf_target_profile <- function(y, task, X) {
   n <- length(y)
+  # Bounded deterministic sampling keeps diagnostics inexpensive on large data.
+  subrows <- unique(as.integer(seq(1,n,length.out=min(n,4096L))))
+  Z <- X[subrows,,drop=FALSE]
+  feature_profile <- data.frame(
+    feature=colnames(X),
+    mean=colMeans(Z),
+    sd=apply(Z,2,stats::sd),
+    unique_fraction=apply(Z,2,function(v) length(unique(v))/length(v)),
+    zero_fraction=colMeans(abs(Z)<1e-12),
+    row.names=NULL
+  )
   if (task == "classification") {
     counts <- tabulate(y + 1L, nbins = max(y) + 1L)
     prob <- counts / sum(counts)
@@ -77,14 +88,16 @@ nf_target_profile <- function(y, task, X) {
     return(list(task=task, n=n, p=ncol(X), counts=counts,
                 prevalence=prob, entropy=entropy,
                 imbalance=max(counts)/max(1,min(counts)),
-                missing_fraction=attr(X,"missing_fraction")))
+                missing_fraction=attr(X,"missing_fraction"),
+                feature_profile=feature_profile))
   }
   q <- as.numeric(stats::quantile(y, c(.05,.25,.5,.75,.95), names=FALSE))
   m <- mean(y); v <- stats::sd(y)
   list(task=task, n=n, p=ncol(X), quantiles=q,
        skewness=if (v > 0) mean(((y-m)/v)^3) else 0,
        kurtosis=if (v > 0) mean(((y-m)/v)^4) - 3 else 0,
-       zero_fraction=mean(y==0), missing_fraction=attr(X,"missing_fraction"))
+       zero_fraction=mean(y==0), missing_fraction=attr(X,"missing_fraction"),
+       feature_profile=feature_profile)
 }
 
 nf_resolve_control <- function(ctrl, n, p, task, profile) {
@@ -103,6 +116,10 @@ nf_resolve_control <- function(ctrl, n, p, task, profile) {
     b <- max(8L, min(64L, p))
     if (isTRUE(ctrl$adaptive) && task == "regression" &&
         abs(profile$skewness) > 2) a <- min(192L, a + 32L)
+    if (isTRUE(ctrl$adaptive) && task == "classification") {
+      a <- min(192L, a + min(48L,8L*max(0L,length(profile$counts)-2L)))
+      if (profile$imbalance > 8) b <- min(96L,b+16L)
+    }
     ctrl$neural_hidden <- c(a, b)
   }
   if (ctrl$split_rule == "auto")
@@ -251,8 +268,12 @@ nf_base_weights <- function(y, task, ctrl) {
   w <- rep(1, length(y))
   if (task=="classification") {
     prop <- tabulate(y+1L)/length(y)
+    ratio <- max(prop)/max(min(prop),1e-8)
     alpha <- if (ctrl$class_balance=="balanced") 1 else
-      if (ctrl$class_balance=="auto") 0.5 else 0
+      if (ctrl$class_balance=="auto") {
+        if (ratio<=1.5) 0.1 else if (ratio<=3) 0.35 else
+          if (ratio<=10) 0.55 else 0.75
+      } else 0
     w <- (1 / pmax(prop[y+1L],1e-8))^alpha
   }
   w/mean(w)
