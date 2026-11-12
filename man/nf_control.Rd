@@ -13,6 +13,10 @@ nf_control(n_trees=300L, mtry=NULL, min_leaf=NULL, min_split=NULL,
   neural_guidance=0.6, feature_guidance=0.25,
   neural_temperature=0.8, max_weight_ratio=6,
   class_balance="auto", adaptive=TRUE, patience=2L,
+  differentiable=FALSE, soft_n_trees=6L, soft_depth=3L,
+  soft_epochs=35L, soft_batch=128L, soft_lr=0.015,
+  soft_temperature=0.8, soft_loss="auto", soft_blend="auto",
+  soft_weight_decay=1e-4, soft_patience=7L, soft_clip=4,
   verbose=FALSE)
 }
 \arguments{
@@ -47,6 +51,18 @@ nf_control(n_trees=300L, mtry=NULL, min_leaf=NULL, min_split=NULL,
 \item{class_balance}{Auto, balanced, or none.}
 \item{adaptive}{Choose unset defaults using training target profile.}
 \item{patience}{Outer early stopping patience.}
+\item{differentiable}{Train soft oblique trees by gradient descent and validate a mixture with the native forest.}
+\item{soft_n_trees}{Differentiable trees in the secondary ensemble.}
+\item{soft_depth}{Depth of each differentiable tree, from 1 to 7.}
+\item{soft_epochs}{Maximum gradient training epochs.}
+\item{soft_batch}{Minibatch size.}
+\item{soft_lr}{Adam learning rate.}
+\item{soft_temperature}{Sigmoid routing temperature.}
+\item{soft_loss}{Auto, logloss, brier, focal, auc ranking surrogate, or mse.}
+\item{soft_blend}{Auto validation selection or numeric mixture coefficients.}
+\item{soft_weight_decay}{AdamW weight decay.}
+\item{soft_patience}{Early stopping by validation surrogate loss.}
+\item{soft_clip}{Gradient norm clipping threshold.}
 \item{verbose}{Print training progress.}
 }
 \value{An nf_control list.}

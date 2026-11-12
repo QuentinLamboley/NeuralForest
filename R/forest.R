@@ -34,6 +34,18 @@
 #' @param class_balance none, balanced or auto.
 #' @param adaptive Adapt unset hyperparameters using the target profile.
 #' @param patience Outer validation-based early stopping.
+#' @param differentiable Enable gradient-trained oblique soft trees.
+#' @param soft_n_trees Differentiable trees in the auxiliary ensemble.
+#' @param soft_depth Complete binary soft-tree depth (1 to 7).
+#' @param soft_epochs Gradient training epochs.
+#' @param soft_batch Gradient minibatch size.
+#' @param soft_lr Adam step size for split and leaf parameters.
+#' @param soft_temperature Soft sigmoid routing temperature.
+#' @param soft_loss Auto or logloss, brier, focal, auc, mse surrogate.
+#' @param soft_blend Auto validation-based blending or numeric weight.
+#' @param soft_weight_decay Weight decay for soft trees.
+#' @param soft_patience Gradient early-stopping patience.
+#' @param soft_clip Global gradient norm clip.
 #' @param verbose Print progress.
 #' @return A control object.
 #' @export
@@ -49,12 +61,23 @@ nf_control <- function(
   neural_guidance = 0.6, feature_guidance = 0.25,
   neural_temperature = 0.8, max_weight_ratio = 6,
   class_balance = "auto", adaptive = TRUE, patience = 2L,
+  differentiable = FALSE, soft_n_trees = 6L, soft_depth = 3L,
+  soft_epochs = 35L, soft_batch = 128L, soft_lr = 0.015,
+  soft_temperature = 0.8, soft_loss = "auto", soft_blend = "auto",
+  soft_weight_decay = 1e-4, soft_patience = 7L, soft_clip = 4,
   verbose = FALSE
 ) {
   z <- as.list(environment())
   z$split_rule <- match.arg(split_rule, c("auto","gini","entropy","variance"))
   z$split_search <- match.arg(split_search, c("auto","exact","histogram"))
   z$class_balance <- match.arg(class_balance, c("auto","none","balanced"))
+  z$soft_loss <- match.arg(soft_loss,
+      c("auto","logloss","brier","focal","auc","mse"))
+  if (!(identical(soft_blend,"auto") ||
+        (is.numeric(soft_blend) && length(soft_blend)>0L &&
+         all(is.finite(soft_blend)) &&
+         all(soft_blend>=0 & soft_blend<=1))))
+    stop("soft_blend must be auto or numeric weights in [0,1]")
   if (!is.numeric(n_trees) || n_trees < 1 ||
       neural_rounds < 1 || min_gain < 0 || laplace < 0 ||
       sample_fraction <= 0 || (!replace && sample_fraction > 1) ||
@@ -63,7 +86,11 @@ nf_control <- function(
       neural_temperature <= 0 || max_weight_ratio < 1 ||
       neural_epochs < 1 || neural_batch < 1 || n_threads < 1 ||
       max_candidates < 0 || histogram_bins < 8 ||
-      max_nodes < 3 || patience < 1)
+      max_nodes < 3 || patience < 1 ||
+      soft_n_trees < 1 || soft_depth < 1 || soft_depth > 7 ||
+      soft_epochs < 1 || soft_batch < 2 || soft_lr <= 0 ||
+      soft_temperature <= 0 || soft_weight_decay < 0 ||
+      soft_patience < 1 || soft_clip <= 0)
     stop("Invalid neural forest control parameters", call. = FALSE)
   if (!is.null(neural_hidden) &&
       (!length(neural_hidden) || any(!is.finite(neural_hidden)) ||
@@ -139,7 +166,9 @@ nf_resolve_control <- function(ctrl, n, p, task, profile) {
   for (nm in c("n_trees","min_leaf","min_split","max_depth","max_nodes",
                "max_candidates","histogram_bins","n_threads",
                "neural_rounds","neural_epochs",
-               "neural_batch","neural_patience","patience"))
+               "neural_batch","neural_patience","patience",
+               "soft_n_trees","soft_depth","soft_epochs","soft_batch",
+               "soft_patience"))
     ctrl[[nm]] <- as.integer(ctrl[[nm]])
   if (ctrl$min_leaf < 1 || ctrl$min_split < 2 || ctrl$max_depth < 1)
     stop("Invalid tree shape parameters")
@@ -425,6 +454,19 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
                        nf_native_cfg(ctrl),as.integer(task=="classification"),
                        K,as.integer(seed+999983L))
   }
+  soft_model <- NULL
+  soft_selection <- NULL
+  original_validation_score <- best_score
+  if (isTRUE(ctrl$differentiable)) {
+    soft_model <- nf_soft_train(Xtr,ytr,Xval,yval,task,K,ctrl,metric,
+                                seed=seed+1919L)
+    hard_val <- nf_cpp_predict(best$trees,Xval,K,FALSE)
+    if (task=="classification") colnames(hard_val) <- resp$labels
+    soft_val <- nf_soft_probabilities(soft_model,Xval)
+    soft_selection <- nf_soft_select_blend(
+      hard_val,soft_val,yval,metric,task,resp$labels,ctrl)
+    if (is.finite(soft_selection$score)) best_score <- soft_selection$score
+  }
   colnames(best$oob_prediction) <- if (task=="classification")
     resp$labels else "response"
   names(best$importance) <- colnames(X)
@@ -432,7 +474,9 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
             control=ctrl,metric=metric,validation_score=best_score,
             validation_rows=vl,trained_on=if(refit) n else length(tr),
             refit=refit,round=best_round,history=history,
-            target_profile=profile,neural=best_nn)
+            target_profile=profile,neural=best_nn,
+            soft_model=soft_model,soft_selection=soft_selection,
+            native_validation_score=original_validation_score)
   class(z) <- "neural_forest"
   z
 }
@@ -445,6 +489,13 @@ predict.neural_forest <- function(object,newdata,type=c("response","prob","class
   K <- if (object$task=="regression") 1L else length(object$levels)
   if (type=="trees") return(nf_cpp_predict(object$native$trees,X,K,TRUE))
   p <- nf_cpp_predict(object$native$trees,X,K,FALSE)
+  if (!is.null(object$soft_model) && !is.null(object$soft_selection)) {
+    alpha <- object$soft_selection$weight
+    if (alpha>0) {
+      soft <- nf_soft_probabilities(object$soft_model,X)
+      p <- (1-alpha)*p + alpha*soft
+    }
+  }
   if (object$task=="regression") {
     if (type %in% c("class","prob")) stop("Regression provides response or trees")
     return(as.numeric(p[,1]))
@@ -460,6 +511,10 @@ print.neural_forest <- function(x,...) {
       x$task,length(x$native$trees),nrow(x$history),x$round))
   cat(sprintf("Holdout %s: %s | refit: %s\n",x$metric,
       format(x$validation_score,digits=4),x$refit))
+  if (!is.null(x$soft_selection))
+    cat(sprintf("Differentiable trees: %d | blend: %.2f | surrogate: %s\n",
+       length(x$soft_model$models)*x$control$soft_n_trees,
+       x$soft_selection$weight,x$soft_model$surrogate))
   invisible(x)
 }
 #' @export
@@ -489,5 +544,9 @@ nf_diagnostics <- function(object) {
        validation_metric=object$metric,
        validation_score=object$validation_score,
        oob_coverage=mean(object$native$oob_count>0),
-       feature_importance=nf_importance(object))
+       feature_importance=nf_importance(object),
+       gradient_surrogate=if (!is.null(object$soft_model))
+         object$soft_model$surrogate else NULL,
+       differentiable_blend=if (!is.null(object$soft_selection))
+         object$soft_selection else NULL)
 }

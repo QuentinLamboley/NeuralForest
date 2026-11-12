@@ -10,3 +10,14 @@ nf_cpp_predict <- function(trees, X, K, per_tree = FALSE) {
   .Call('_NeuralForest_nf_cpp_predict', PACKAGE = 'NeuralForest',
         trees, X, K, per_tree)
 }
+
+nf_soft_fit <- function(X,y,Xvalid,yvalid,config,seed,classification) {
+  .Call("_NeuralForest_nf_soft_fit",PACKAGE="NeuralForest",
+        X,y,Xvalid,yvalid,config,as.integer(seed),classification)
+}
+nf_soft_predict <- function(model,X) {
+  .Call("_NeuralForest_nf_soft_predict",PACKAGE="NeuralForest",model,X)
+}
+nf_soft_gradient_check <- function() {
+  .Call("_NeuralForest_nf_soft_gradient_check",PACKAGE="NeuralForest")
+}

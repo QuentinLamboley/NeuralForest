@@ -25,7 +25,31 @@ RcppExport SEXP _NeuralForest_nf_cpp_predict(SEXP treesSEXP, SEXP XSEXP,
                              as<int>(kSEXP), as<bool>(ptSEXP)));
   END_RCPP
 }
+List nf_soft_fit(NumericMatrix, NumericVector, NumericMatrix, NumericVector, List, int, bool);
+NumericVector nf_soft_predict(List, NumericMatrix);
+double nf_soft_gradient_check();
+RcppExport SEXP _NeuralForest_nf_soft_fit(SEXP X,SEXP y,SEXP Xv,SEXP yv,
+                                           SEXP cfg,SEXP seed,SEXP cls) {
+  BEGIN_RCPP
+  return wrap(nf_soft_fit(as<NumericMatrix>(X),as<NumericVector>(y),
+                          as<NumericMatrix>(Xv),as<NumericVector>(yv),
+                          as<List>(cfg),as<int>(seed),as<bool>(cls)));
+  END_RCPP
+}
+RcppExport SEXP _NeuralForest_nf_soft_predict(SEXP model,SEXP X) {
+  BEGIN_RCPP
+  return wrap(nf_soft_predict(as<List>(model),as<NumericMatrix>(X)));
+  END_RCPP
+}
+RcppExport SEXP _NeuralForest_nf_soft_gradient_check() {
+  BEGIN_RCPP
+  return wrap(nf_soft_gradient_check());
+  END_RCPP
+}
 static const R_CallMethodDef CallEntries[] = {
+  {"_NeuralForest_nf_soft_fit", (DL_FUNC) &_NeuralForest_nf_soft_fit, 7},
+  {"_NeuralForest_nf_soft_predict", (DL_FUNC) &_NeuralForest_nf_soft_predict, 2},
+  {"_NeuralForest_nf_soft_gradient_check", (DL_FUNC) &_NeuralForest_nf_soft_gradient_check, 0},
   {"_NeuralForest_nf_cpp_fit", (DL_FUNC) &_NeuralForest_nf_cpp_fit, 8},
   {"_NeuralForest_nf_cpp_predict", (DL_FUNC) &_NeuralForest_nf_cpp_predict, 4},
   {NULL, NULL, 0}

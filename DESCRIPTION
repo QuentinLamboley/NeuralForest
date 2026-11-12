@@ -1,11 +1,13 @@
 Package: NeuralForest
 Title: Adaptive Neural-Guided Random Forests
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: person("Quentin", "Lamboley", role = c("aut", "cre"), email = "145555916+QuentinLamboley@users.noreply.github.com")
 Description: A native C++17 random forest engine for classification and regression
-    augmented by an out-of-bag neural difficulty learner. A neural network learns
-    observation priorities and guides subsequent bootstrap samples and feature
-    selection. Includes distribution-aware presets, metric-driven selection,
+    augmented by an out-of-bag neural difficulty learner and gradient-trained
+    oblique soft decision trees. A neural network guides bootstrap sampling
+    and feature selection while soft tree split projections and thresholds
+    are differentiated with respect to metric-dependent surrogate losses.
+    Includes distribution-aware presets, metric-driven selection,
     cross-validation, and transparent diagnostic and benchmarking functions.
     This is an experimental research implementation, not an established
     replacement for 'ranger'.

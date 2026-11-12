@@ -8,10 +8,14 @@ perceptron (MLP). The MLP learns **which observations are difficult to predict**
 from out-of-bag (OOB) errors and adapts sampling probabilities for subsequent
 forests. Its learned input-layer saliencies also guide feature proposals.
 
-This is **not** a fully differentiable tree learner. The MLP does not directly
-choose each split. Claims that NeuralForest is universally faster or more
-accurate than ranger, xgboost, or other established packages require independent
-benchmarks; no such claim is made here.
+With `differentiable=TRUE`, an auxiliary soft decision-tree ensemble uses
+sigmoid routing and analytic reverse-mode gradients to optimize each split
+projection, threshold and terminal value. A validation-selected mixture combines
+the differentiable trees with the native CART ensemble. Non-differentiable
+selection metrics use stated surrogate objectives, not exact metric gradients.
+
+Claims of universal superiority over ranger or boosting methods are not made.
+Independent benchmark results are published separately from the package checks.
 
 ## Install
 
@@ -41,7 +45,11 @@ Or install locally after cloning:
         n_threads = 4,
         max_depth = 12,
         min_leaf = 2,
-        neural_guidance = 0.6
+        neural_guidance = 0.6,
+        differentiable = TRUE,
+        soft_n_trees = 6,
+        soft_depth = 3,
+        soft_loss = "auto"
       ),
       metric = "macro_auc",
       seed = 42
@@ -95,16 +103,20 @@ ranger is optional and installed separately for that comparison.
    feature subsampling; exact or binned split candidates; weighted CART Gini,
    entropy or variance reduction; leaf smoothing; OOB probability estimates;
    optional OpenMP parallelism.
-4. **Neural difficulty learner**: configurable ReLU MLP with sigmoid output,
+4. **Differentiable tree learner**: weighted oblique splits route observations
+   through sigmoid gates; leaf logits and split coefficients are optimized by
+   analytic backpropagation with Adam. Separate internal validation selects
+   the contribution of these trees to the final ensemble.
+5. **Neural difficulty learner**: configurable ReLU MLP with sigmoid output,
    soft OOB-ranked error targets, mini-batch Adam, weight decay and early
    stopping. It adapts observation and variable proposal weights. Guidance
    can be disabled to compare a conventional forest baseline.
-5. **Round selection**: disjoint validation set used to choose the best
+6. **Round selection**: disjoint validation set used to choose the best
    forest round by a user-selected metric; early stopping.
-6. **Model analysis**: native impurity importance, holdout permutation
+7. **Model analysis**: native impurity importance, holdout permutation
    importance, uncalibrated ensemble disagreement, per-tree predictions,
    feature distribution profiles, selection history and OOB coverage.
-7. **Tuning and comparisons**: random/grid search with outer CV, optional
+8. **Tuning and comparisons**: random/grid search with outer CV, optional
    group-aware splitting, ranger benchmark.
 
 ### Training flow
@@ -142,6 +154,11 @@ means its reported score is a **selection score**, not an untouched test score.
 | class_balance | None, balanced or auto |
 | adaptive | Target-aware default values |
 | n_threads | OpenMP threads (falls back to serial if unavailable) |
+| differentiable, soft_n_trees, soft_depth | Train gradient-optimized soft splits |
+| soft_loss | Metric-specific differentiable surrogate or explicit choice |
+| soft_blend | Holdout-selected contribution of differentiable trees |
+| soft_epochs, soft_batch, soft_lr | Gradient optimization controls |
+| soft_temperature, soft_clip, soft_patience | Routing and optimization stability |
 | patience, neural_patience | Early stopping |
 | verbose | Round-level progress |
 
@@ -163,8 +180,10 @@ diagnostic metric. MASE depends on the observation order.
   importance on a separate holdout for scientific conclusions.
 - Spatial, temporal and group-dependent data require appropriate splits.
   Use the groups argument or your own external evaluation.
-- Neural adaptation is predictive importance-weighted resampling, not a
-  theoretical guarantee of better generalization.
+- Neural sampling is predictive importance-weighted resampling.
+  Soft-tree split parameters are differentiated directly, but AUC, Boyce,
+  F1 and related discrete metrics are approximated by ranking or focal
+  losses; held-out selection uses the actual requested metric.
 - Multiclass AUC uses one-vs-rest averaging; ECE uses confidence calibration.
 - Workload depends strongly on n, p, node size, tree count and neural rounds.
   CPU memory and compute usage can be substantial.
