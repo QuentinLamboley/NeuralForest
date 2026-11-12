@@ -282,9 +282,9 @@ List nf_cpp_fit(NumericMatrix X, NumericVector y, NumericVector weights,
     as<int>(cfg["min_leaf"]), as<int>(cfg["min_split"]),
     as<int>(cfg["max_depth"]), as<int>(cfg["max_nodes"]),
     as<int>(cfg["mtry"]), as<int>(cfg["max_candidates"]),
-    as<int>(cfg["split_rule"]), as<double>(cfg["min_gain"]),
-    as<double>(cfg["laplace"]), as<bool>(cfg["extra_random"]),
-    as<int>(cfg["histogram_bins"]), as<int>(cfg["histogram_mode"])
+    as<int>(cfg["split_rule"]), as<int>(cfg["histogram_bins"]),
+    as<int>(cfg["histogram_mode"]), as<double>(cfg["min_gain"]),
+    as<double>(cfg["laplace"]), as<bool>(cfg["extra_random"])
   };
   std::vector<NFModelTree> forest(ntree);
 #ifdef _OPENMP
