@@ -410,7 +410,7 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
   native_start <- now()
   w0 <- nf_base_weights(ytr,task,ctrl)
   w <- w0
-  fw <- rep(1,ncol(X))
+  fw <- rep(1,ncol(Xtr))
   best <- NULL; best_nn <- NULL
   best_score <- if (nf_metric_direction(metric)=="maximize") -Inf else Inf
   stale <- 0L
@@ -518,7 +518,7 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
   refit_seconds <- now()-refit_start
   colnames(best$oob_prediction) <- if (task=="classification")
     resp$labels else "response"
-  names(best$importance) <- colnames(X)
+  names(best$importance) <- colnames(Xtr)
   timings <- list(preprocess_seconds=preparation_seconds,
                   native_selection_seconds=native_seconds,
                   soft_selection_seconds=soft_seconds,
