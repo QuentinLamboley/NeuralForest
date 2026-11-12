@@ -1,0 +1,22 @@
+Package: NeuralForest
+Title: Adaptive Neural-Guided Random Forests
+Version: 0.1.0
+Authors@R: person("Quentin", "Lamboley", role = c("aut", "cre"), email = "145555916+QuentinLamboley@users.noreply.github.com")
+Description: A native C++17 random forest engine for classification and regression
+    augmented by an out-of-bag neural difficulty learner. A neural network learns
+    observation priorities and guides subsequent bootstrap samples and feature
+    selection. Includes distribution-aware presets, metric-driven selection,
+    cross-validation, and transparent diagnostic and benchmarking functions.
+    This is an experimental research implementation, not an established
+    replacement for 'ranger'.
+License: CC0
+URL: https://github.com/QuentinLamboley/NeuralForest
+BugReports: https://github.com/QuentinLamboley/NeuralForest/issues
+Encoding: UTF-8
+Depends: R (>= 4.3.0)
+Imports: Rcpp (>= 1.0.12), stats, utils
+LinkingTo: Rcpp
+Suggests: testthat (>= 3.0.0), ranger
+SystemRequirements: C++17 compiler
+NeedsCompilation: yes
+Config/testthat/edition: 3
