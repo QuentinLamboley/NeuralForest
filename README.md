@@ -218,3 +218,13 @@ equine Lyme and Ixodes ricinus research, reimplemented as a standalone
 R package with a native tree backend.
 
 CC0-1.0 (see LICENSE). Original research-grade software, provided as-is.
+
+## Audited benchmark and runtime
+
+The full 19-scenario, four-seed benchmark is available in
+[benchmark/results/RESULTS.md](benchmark/results/RESULTS.md).
+Separate parameter-selection, final-fit and prediction timings for
+all 16 algorithms are tabulated in
+[benchmark/results/COMPUTE_TIME.md](benchmark/results/COMPUTE_TIME.md).
+A record of identified defects, changes and remaining limitations
+is maintained in [audit/AUDIT.md](audit/AUDIT.md).

@@ -64,6 +64,17 @@ These synthetic datasets do not establish universal superiority.
 
 - all_runs.csv: all metrics, configurations and timed stages
 - summary.csv: mean, standard deviation, ranking and phase timings
-- paired_v02_comparison.csv: paired original-seed differences
+- paired_v02_comparison.csv: 480 original-seed pairs (17 and 43)
+- COMPUTE_TIME.md: timing comparison for all 16 algorithms
 - manifest.json: provenance, seeds, failures and environment
 - benchmark/README.md: full experimental protocol and limitations
+
+## Before and after the audit
+
+The original version 0.2 outcomes were archived before the changes. The new release fixes duplicate weight application, training/validation preprocessing leakage and the order of refitting versus soft-tree model selection. It adds a differentiated average-precision surrogate and a validation-selected ridge linear expert.
+
+For the 3-percent positive-class scenario, the old differentiable forest obtained 0.132 mean average precision across its two historical seeds. The corrected differentiable forest obtains 0.207 across four seeds, and the adaptive hybrid obtains 0.222. Logistic regression remains stronger at 0.264.
+
+The 1:5 presence-background Boyce score of the original differentiable forest was 0.995 across two seeds; the audited differentiable forest is at 0.962 across four seeds and the adaptive hybrid at 0.955. This decline must not be hidden. The validation/refit procedure and weighting strategy changed, so the scores are not strictly a single-component ablation.
+
+The adaptive hybrid leads on two of 19 scenario primary metrics. Its improvement relative to the previous release does not establish dominance across all distributions.

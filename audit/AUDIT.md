@@ -67,3 +67,15 @@ QuentinLamboley/td-machinelearning revision
 See benchmark/README.md for exact scenarios and comparison budgets.
 See benchmark/results for measured scores and timings. The complete
 version 0.2 results are preserved in audit/ for paired comparisons.
+
+## Observed v0.3 benchmark
+
+The audited benchmark evaluated 16 methods across 19 scenarios and four seeds: 1,216 successful fits. The adaptive hybrid ranks first on two scenarios, the 20-percent label-noise AUC experiment and the 1:1 presence-background Boyce experiment. Logistic regression, CatBoost, ExtraTrees and other methods remain better elsewhere.
+
+For 3 percent positives, the previous differentiable NeuralForest achieved 0.132 average precision on seeds 17 and 43. The new differentiable variant achieved 0.207 across four seeds; the adaptive hybrid reached 0.222. Logistic regression remained best at 0.264. The adaptive model's average selection, final fitting and prediction times were 0.849, 0.211 and 0.015 s. Logistic regression required 0.022, 0.003 and 0.001 s.
+
+For the presence-background 1:5 experiment, the old two-seed differentiable Boyce score of 0.995 did not persist after the audit: audited differentiable score 0.962 and adaptive score 0.955 across four seeds. This regression is retained in all score tables. The results cannot identify which individual correction caused the difference without additional targeted ablations.
+
+Two new seeds, 71 and 97, are reported separately in benchmark/results/summary.csv. This helps detect improvements that only reproduce on the previously inspected samples, but two confirmation seeds are not a substitute for an external benchmark suite.
+
+All algorithms' model-selection time, refit time, prediction time and total are published in benchmark/results/COMPUTE_TIME.md and summary.csv. The full per-run record is in all_runs.csv.
