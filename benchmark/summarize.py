@@ -30,7 +30,8 @@ def build():
     summary=[]
     for (scenario,model),g in data.groupby(["scenario","model"],sort=True):
         target=g.selected_metric.iloc[0]
-        v=g[target]
+        metric_column="roc_auc" if target=="auc" else target
+        v=g[metric_column]
         ok=v[np.isfinite(v)]
         row=dict(scenario=scenario,model=model,primary_metric=target,
            primary_mean=ok.mean() if len(ok) else np.nan,
