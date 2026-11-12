@@ -107,7 +107,7 @@ def build():
        "",
        "Failures remain in the CSV and manifest rather than being excluded.",
        "All time comparisons are specific to this hardware and workload.",
-       "See benchmark/README.md for caveats and exact configuration."]
+       "See benchmark/README.md for caveats and exact configuration."])
     (RESULTS/"RESULTS.md").write_text("\n".join(lines)+"\n",encoding="utf8")
     print("\n".join(lines),flush=True)
     print(f"Rows {len(data)}, successes {manifest['successes']}",flush=True)

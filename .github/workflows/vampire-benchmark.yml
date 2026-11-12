@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'benchmark/**'
+      - '!benchmark/results/**'
       - '.github/workflows/vampire-benchmark.yml'
   workflow_dispatch:
 permissions:
