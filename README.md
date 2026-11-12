@@ -1,6 +1,6 @@
 # NeuralForest
 
-**Neural-guided random forests for R** — a research-stage package with a native
+**Neural-guided random forests for R** : a research-stage package with a native
 C++17 tree engine and an adaptive neural sampler.
 
 NeuralForest combines weighted, randomized CART trees and a small multilayer
@@ -87,7 +87,7 @@ Hyperparameter search with **nested holdouts** inside each outer fold:
     tuning$results
     tuning$best_control
 
-Fair timing of both algorithms on the same outer holdout:
+An indicative comparison with ranger on a common outer holdout:
 
     nf_benchmark(iris[,1:4],iris$Species)
 
@@ -191,8 +191,12 @@ diagnostic metric. MASE depends on the observation order.
 ## Validation
 
 The repository ships testthat tests and a GitHub Actions R CMD check
-workflow. Reproducible benchmarks are run separately because they are
-hardware and dataset dependent.
+workflow. The simulator-based benchmark is specified in
+[benchmark/README.md](benchmark/README.md), with measured scores and
+timings published under [benchmark/results](benchmark/results). The
+comparison evaluates XGBoost, LightGBM, CatBoost, ranger and other
+reference methods across changes in class overlap, prevalence, feature
+structure and presence-background sampling.
 
 ## Origins and license
 
