@@ -1,0 +1,32 @@
+name: Publish audited benchmark results
+on:
+  push:
+    paths: ['.github/workflows/publish-audited-results.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: vampire-benchmark-results
+          run-id: 43237368349
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: benchmark/results
+      - name: Compare with previous release
+        run: python audit/pair_previous.py
+      - name: Commit measured results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add benchmark/results/
+          if ! git diff --staged --quiet; then
+            git commit -m "Publish audited vampire benchmark and paired comparisons"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
