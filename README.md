@@ -8,6 +8,10 @@ perceptron (MLP). The MLP learns **which observations are difficult to predict**
 from out-of-bag (OOB) errors and adapts sampling probabilities for subsequent
 forests. Its learned input-layer saliencies also guide feature proposals.
 
+Version 0.4.1 corrects a latent warm-start dimension check, discovered by
+training three guided neural rounds. Regression tests now exercise the
+third round rather than only checking network weight transport in isolation.
+
 Version 0.4 stabilizes neural warm starts when input scaling changes between
 rounds, broadens ridge-regularization candidates, and optionally learns binary
 probability calibration on out-of-bag predictions. The validation fold selects

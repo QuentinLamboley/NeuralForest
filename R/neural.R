@@ -100,7 +100,8 @@ nf_nn_train <- function(X,target,ctrl,seed,previous=NULL) {
   train <- if (nv>0) ord[-seq_len(nv)] else ord
   net <- if (!is.null(previous) &&
              nrow(previous$layers[[1]]$W)==ncol(xx) &&
-             identical(vapply(previous$layers,ncol,integer(1)),
+             identical(vapply(previous$layers,function(layer) ncol(layer$W),
+                              integer(1)),
                        as.integer(c(ctrl$neural_hidden,1L))))
     nf_nn_transport(previous,scaled$center,scaled$scale)
   else nf_nn_init(ncol(xx),ctrl$neural_hidden,seed)

@@ -33,7 +33,11 @@ def run_one(scenario,seed):
         loaded=json.loads((path/"output.json").read_text(encoding="utf8"))
     rows=[]
     y=test["Vampirisme"].to_numpy(dtype=int)
+    # Regression guard: the second configuration must execute three
+    # rounds without hitting a warm-start layer-dimension exception.
     for m in loaded["models"]:
+        if int(m["rounds"]) not in (2,3) or int(m["selected_round"])>int(m["rounds"]):
+            raise RuntimeError("Invalid neural-round output")
         p=np.asarray(m["probability"],dtype=float)
         if len(p)!=len(y) or not np.isfinite(p).all():
             raise RuntimeError("Invalid prediction length or probability")

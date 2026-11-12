@@ -123,3 +123,13 @@ other trees of the ensemble and model selection remains data-dependent.
 A 0.5 decision threshold does not optimize all thresholded metrics.
 The current benchmark uses bounded and unequal hyperparameter budgets,
 and the recorded wall-clock times are runner-specific.
+
+### Additional defect detected by third-round ablation
+
+The initial three-round ablation failed because the warm-start
+compatibility check applied ncol() to layer lists, rather than
+to each layer's numeric weight matrix. This code path is not reached
+by a benchmark configured for only two neural rounds. Version 0.4.1
+corrects the compatibility check and adds an end-to-end three-round
+regression test. The corrected ablation must complete before claiming
+that the warm-start implementation has been empirically evaluated.

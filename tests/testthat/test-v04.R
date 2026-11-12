@@ -56,3 +56,21 @@ test_that("average precision can be explicitly chosen as a soft loss", {
   expect_equal(ctrl$soft_loss,"ap")
   expect_error(nf_control(calibration_penalties=c(-1,0.1)),"positive")
 })
+
+test_that("three neural rounds can reuse a transported network", {
+  set.seed(509)
+  n <- 180L
+  predictors <- data.frame(a=rnorm(n),b=rnorm(n),c=runif(n))
+  response <- factor(ifelse(predictors$a+predictors$b*0.4+
+                             rnorm(n,sd=0.5)>0,"positive","negative"))
+  control <- nf_control(n_trees=20L,neural=TRUE,neural_rounds=3L,
+              neural_hidden=c(10L,5L),neural_epochs=4L,
+              neural_patience=3L,patience=3L,
+              differentiable=FALSE)
+  fitted <- neural_forest(predictors,response,metric="auc",
+                          control=control,seed=509L)
+  expect_equal(nrow(fitted$history),3L)
+  expect_true(is.finite(fitted$validation_score))
+  expect_true(all(is.finite(predict(fitted,predictors[1:12,],
+                                    type="prob"))))
+})
