@@ -1,4 +1,4 @@
-# Vampire benchmark: audited NeuralForest
+# Vampire benchmark: NeuralForest v0.4.1
 
 All times are measured wall-clock values on GitHub-hosted CPU
 runners with mathematical libraries constrained to one thread.
@@ -68,3 +68,30 @@ These synthetic datasets do not establish universal superiority.
 - paired_v03_comparison.csv: 4-seed paired v0.3 versus v0.4 comparison
 - manifest.json: provenance, seeds, failures and environment
 - benchmark/README.md: full experimental protocol and limitations
+
+## Neural round ablation
+
+A separate v0.4.1 ablation compared two and three guided rounds on 19
+scenario families, independently generated for seeds 227 and 311.
+The third round improved the primary metric in six scenarios, worsened
+two and tied eleven at the reported precision. Its mean additional
+training and inference time was approximately 0.153 s per run.
+The third round was retained by inner validation in 15 of the 38
+three-round fits. See audit/rounds_report.md and
+audit/rounds_results.csv for case-level scores and time components.
+
+The main cross-algorithm benchmark uses two guided rounds and
+therefore does not independently test the three-round warm-start
+transport correction. The additional ablation covers that code path.
+An extra round changes both learner depth and number of forests;
+its effect cannot be attributed to coordinate transport alone.
+
+## Timing and interpretation
+
+All algorithm selection, final-fit and inference times for v0.4.1
+are reported in COMPUTE_TIME.md, summary.csv and all_runs.csv.
+The adaptive hybrid does not outperform all reference methods:
+the six-seed trial has logistic regression ahead on the 1% and
+3% rare-positive average-precision scenarios, while CatBoost and
+boosting variants often lead on larger or nonlinear samples.
+No universal optimality claim follows from this simulator.

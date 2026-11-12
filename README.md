@@ -245,3 +245,14 @@ all 16 algorithms are tabulated in
 [benchmark/results/COMPUTE_TIME.md](benchmark/results/COMPUTE_TIME.md).
 A record of identified defects, changes and remaining limitations
 is maintained in [audit/AUDIT.md](audit/AUDIT.md).
+
+## Third-round ablation and reproducible compute costs
+
+The v0.4.1 third-round warm-start defect is covered by an
+end-to-end regression test. The independent two-versus-three
+neural-round experiment reports all 76 fits in
+[audit/rounds_results.csv](audit/rounds_results.csv) and
+[audit/rounds_report.md](audit/rounds_report.md).
+The six-seed comparison between all 17 candidate methods is
+maintained in [benchmark/results](benchmark/results), including
+[COMPUTE_TIME.md](benchmark/results/COMPUTE_TIME.md).

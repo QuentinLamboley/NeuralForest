@@ -133,3 +133,30 @@ by a benchmark configured for only two neural rounds. Version 0.4.1
 corrects the compatibility check and adds an end-to-end three-round
 regression test. The corrected ablation must complete before claiming
 that the warm-start implementation has been empirically evaluated.
+
+## v0.4.1 test and benchmark disposition
+
+The native package passes R CMD check on Linux, macOS and Windows
+for the v0.4.1 commit that repairs the third-round warm-start
+compatibility check. The primary benchmark was rerun on the same
+19 scenarios, 17 reference variants and six seeds, yielding 1,938
+successful fits. The generator revision is unchanged, making
+the score comparisons to the earlier v0.4 release controlled,
+although runner hardware and elapsed times can vary.
+
+A separate third-round ablation on independent seeds 227 and 311
+completed 76 fits. A third guided round improved six scenarios,
+degraded two and tied eleven by their primary metrics. Across all
+38 paired training tasks, the average additional total time was
+approximately 0.153 seconds. Internal validation selected the
+third round in 15/38 three-round fits. The full ablation is
+reported in audit/rounds_report.md.
+
+The principal remaining architectural weaknesses are
+model-selection variance with extremely few positive cases,
+soft-tree optimisation cost relative to boosted-tree baselines,
+heavy dependence on the initial feature representation, and
+the absence of distribution-free generalization guarantees.
+The reported mean runtimes are not hardware-normalized
+performance guarantees. The laboratory's separate real-world
+validation datasets should be evaluated before any deployment.
