@@ -45,3 +45,16 @@ test_that("control validation catches malformed requests", {
   expect_error(nf_control(sample_fraction=1.2,replace=FALSE))
   expect_error(neural_forest(matrix(1,5,2),1:5), "At least 20")
 })
+
+test_that("native histogram splitting provides valid predictions", {
+  set.seed(70)
+  x <- data.frame(a=rnorm(110),b=runif(110))
+  y <- factor(ifelse(x$a>0,"yes","no"))
+  fit <- neural_forest(x,y,metric="auc",seed=70,
+       control=nf_control(neural=FALSE,n_trees=15,
+                          split_search="histogram",histogram_bins=24,
+                          max_candidates=0,min_leaf=2))
+  p <- predict(fit,x[1:10,,drop=FALSE],type="prob")
+  expect_equal(dim(p),c(10L,2L))
+  expect_true(all(abs(rowSums(p)-1)<1e-6))
+})

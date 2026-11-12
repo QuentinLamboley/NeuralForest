@@ -92,7 +92,7 @@ ranger is optional and installed separately for that comparison.
 2. **Target profile**: empirical class frequencies, entropy, target quantiles,
    skewness, kurtosis, zero fraction and input missingness.
 3. **C++17 training**: bootstrap or weighted sampling without replacement;
-   feature subsampling; exact/strided split candidates; weighted CART Gini,
+   feature subsampling; exact or binned split candidates; weighted CART Gini,
    entropy or variance reduction; leaf smoothing; OOB probability estimates;
    optional OpenMP parallelism.
 4. **Neural difficulty learner**: configurable ReLU MLP with sigmoid output,
@@ -127,6 +127,8 @@ means its reported score is a **selection score**, not an untouched test score.
 | min_leaf, min_split | Minimum observations in leaves / nodes |
 | max_depth, max_nodes | Complexity and memory limits |
 | max_candidates | Candidate split count per feature (0 exhausts all) |
+| split_search | Exact splits or histogram-based approximate splits |
+| histogram_bins | Number of bins for approximate splitting |
 | extra_random | Random offsets for candidate thresholds |
 | split_rule | Gini / entropy classification, variance regression |
 | sample_fraction, replace | Sampling size and bootstrap policy |

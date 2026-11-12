@@ -6,7 +6,7 @@
 nf_control(n_trees=300L, mtry=NULL, min_leaf=NULL, min_split=NULL,
   max_depth=NULL, max_nodes=100000L, max_candidates=128L,
   sample_fraction=0.8, replace=TRUE, split_rule="auto",
-  extra_random=FALSE, min_gain=0, laplace=1, n_threads=1L,
+  split_search="auto", histogram_bins=128L, extra_random=FALSE, min_gain=0, laplace=1, n_threads=1L,
   neural=TRUE, neural_rounds=3L, neural_hidden=NULL,
   neural_epochs=35L, neural_batch=256L, neural_lr=0.002,
   neural_weight_decay=1e-4, neural_patience=6L,
@@ -26,6 +26,8 @@ nf_control(n_trees=300L, mtry=NULL, min_leaf=NULL, min_split=NULL,
 \item{sample_fraction}{Bootstrap draw fraction of training observations.}
 \item{replace}{Sample with replacement.}
 \item{split_rule}{Auto, gini, entropy, or variance.}
+\item{split_search}{Auto, exact sorted thresholds, or histogram bins.}
+\item{histogram_bins}{Histogram resolution (minimum 8).}
 \item{extra_random}{Randomly offset candidate thresholds.}
 \item{min_gain}{Minimum impurity improvement.}
 \item{laplace}{Additive probability smoothing at leaves.}

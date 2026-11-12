@@ -13,6 +13,8 @@
 #' @param sample_fraction Fraction of training rows sampled per tree.
 #' @param replace Whether to sample with replacement.
 #' @param split_rule One of auto, gini, entropy, variance.
+#' @param split_search Auto, exact (sorted), or histogram (binned splits).
+#' @param histogram_bins Number of bins for histogram splits.
 #' @param extra_random Randomly offset candidate split positions.
 #' @param min_gain Minimum impurity gain to split.
 #' @param laplace Additive class-probability smoothing.
@@ -39,6 +41,7 @@ nf_control <- function(
   n_trees = 300L, mtry = NULL, min_leaf = NULL, min_split = NULL,
   max_depth = NULL, max_nodes = 100000L, max_candidates = 128L,
   sample_fraction = 0.8, replace = TRUE, split_rule = "auto",
+  split_search = "auto", histogram_bins = 128L,
   extra_random = FALSE, min_gain = 0, laplace = 1, n_threads = 1L,
   neural = TRUE, neural_rounds = 3L, neural_hidden = NULL,
   neural_epochs = 35L, neural_batch = 256L, neural_lr = 0.002,
@@ -50,6 +53,7 @@ nf_control <- function(
 ) {
   z <- as.list(environment())
   z$split_rule <- match.arg(split_rule, c("auto","gini","entropy","variance"))
+  z$split_search <- match.arg(split_search, c("auto","exact","histogram"))
   z$class_balance <- match.arg(class_balance, c("auto","none","balanced"))
   if (!is.numeric(n_trees) || n_trees < 1 ||
       neural_rounds < 1 || min_gain < 0 || laplace < 0 ||
@@ -58,7 +62,8 @@ nf_control <- function(
       feature_guidance < 0 || feature_guidance > 1 ||
       neural_temperature <= 0 || max_weight_ratio < 1 ||
       neural_epochs < 1 || neural_batch < 1 || n_threads < 1 ||
-      max_candidates < 0 || max_nodes < 3 || patience < 1)
+      max_candidates < 0 || histogram_bins < 8 ||
+      max_nodes < 3 || patience < 1)
     stop("Invalid neural forest control parameters", call. = FALSE)
   if (!is.null(neural_hidden) &&
       (!length(neural_hidden) || any(!is.finite(neural_hidden)) ||
@@ -124,13 +129,16 @@ nf_resolve_control <- function(ctrl, n, p, task, profile) {
   }
   if (ctrl$split_rule == "auto")
     ctrl$split_rule <- if (task == "classification") "gini" else "variance"
+  if (ctrl$split_search == "auto")
+    ctrl$split_search <- if (n >= 5000) "histogram" else "exact"
   if (task == "regression" && ctrl$split_rule != "variance")
     stop("Regression supports split_rule='variance' only")
   if (task == "classification" && ctrl$split_rule == "variance")
     stop("Classification supports gini or entropy splits")
   ctrl$mtry <- max(1L, min(p, as.integer(ctrl$mtry)))
   for (nm in c("n_trees","min_leaf","min_split","max_depth","max_nodes",
-               "max_candidates","n_threads","neural_rounds","neural_epochs",
+               "max_candidates","histogram_bins","n_threads",
+               "neural_rounds","neural_epochs",
                "neural_batch","neural_patience","patience"))
     ctrl[[nm]] <- as.integer(ctrl[[nm]])
   if (ctrl$min_leaf < 1 || ctrl$min_split < 2 || ctrl$max_depth < 1)
@@ -261,6 +269,8 @@ nf_native_cfg <- function(ctrl) {
        max_nodes=ctrl$max_nodes, max_candidates=ctrl$max_candidates,
        sample_fraction=ctrl$sample_fraction, replace=ctrl$replace,
        split_rule=if (ctrl$split_rule=="entropy") 1L else 0L,
+       histogram_mode=if (ctrl$split_search=="histogram") 1L else 0L,
+       histogram_bins=ctrl$histogram_bins,
        extra_random=ctrl$extra_random, min_gain=ctrl$min_gain,
        laplace=ctrl$laplace, n_threads=ctrl$n_threads)
 }

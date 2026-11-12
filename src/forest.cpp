@@ -27,6 +27,7 @@ struct NFRow {
 };
 struct NFConfig {
   int min_leaf, min_split, max_depth, max_nodes, mtry, max_candidates, rule;
+  int histogram_bins, histogram_mode;
   double min_gain, smoothing;
   bool extra_random;
 };
@@ -45,7 +46,7 @@ class NFTreeBuilder {
   const NumericVector& weights_;
   const NumericVector& feature_weights_;
   int task_, K_, p_, min_leaf_, min_split_, max_depth_, max_nodes_;
-  int mtry_, max_candidates_, rule_;
+  int mtry_, max_candidates_, rule_, histogram_bins_, histogram_mode_;
   double min_gain_, smoothing_;
   bool extra_random_;
   std::mt19937_64& gen_;
@@ -116,6 +117,59 @@ class NFTreeBuilder {
     int best_feature = -1;
     double best_gain = min_gain_, best_cut = 0.0;
     for (int f : sample_features()) {
+      // Histogram splitting avoids the per-node sort for large datasets.
+      // Bounds and histograms are computed on the *current node* only.
+      if (histogram_mode_ == 1) {
+        double lo = std::numeric_limits<double>::infinity();
+        double hi = -lo;
+        for (int i : idx) {
+          lo = std::min(lo, static_cast<double>(X_(i,f)));
+          hi = std::max(hi, static_cast<double>(X_(i,f)));
+        }
+        const int B = histogram_bins_;
+        const double step = (hi-lo)/B;
+        if (!(step > 0) || !std::isfinite(step)) continue;
+        std::vector<int> bin_count(B,0);
+        std::vector<double> bin_weights(B,0.0);
+        std::vector<std::vector<double> > bin_stats(
+          B,std::vector<double>(total.size(),0.0));
+        for (int i : idx) {
+          const double z = (X_(i,f)-lo)/step;
+          const int b = std::min(B-1,std::max(0,static_cast<int>(z)));
+          const double w = weights_[i], yy = y_[i];
+          ++bin_count[b];
+          bin_weights[b] += w;
+          if (task_ == 0) {
+            bin_stats[b][0] += w*yy;
+            bin_stats[b][1] += w*yy*yy;
+          } else bin_stats[b][static_cast<int>(yy)] += w;
+        }
+        std::vector<double> ls(total.size(),0.0), rs=total;
+        double lw=0, rw=totalw;
+        int lc=0;
+        const int stride=max_candidates_>0 ?
+          std::max(1,(B-1)/max_candidates_):1;
+        const int random_pick=extra_random_ ?
+          static_cast<int>(gen_()%stride):0;
+        for (int b=0; b<B-1; ++b) {
+          lc += bin_count[b]; lw += bin_weights[b]; rw -= bin_weights[b];
+          for (size_t k=0; k<ls.size(); ++k) {
+            ls[k] += bin_stats[b][k];
+            rs[k] -= bin_stats[b][k];
+          }
+          if (lc<min_leaf_ || static_cast<int>(idx.size())-lc<min_leaf_ ||
+              lw<=0 || rw<=0) continue;
+          if (stride>1 && (b-random_pick)%stride != 0) continue;
+          const double gain=parent_imp -
+            (lw*impurity(ls,lw)+rw*impurity(rs,rw))/totalw;
+          if (gain>best_gain+1e-14) {
+            best_gain=gain;best_feature=f;
+            const double cut=lo+(b+1)*step;
+            best_cut=std::nextafter(cut,-std::numeric_limits<double>::infinity());
+          }
+        }
+        continue;
+      }
       std::vector<NFRow> rows;
       rows.reserve(idx.size());
       for (int i : idx) rows.push_back({X_(i, f), y_[i], weights_[i]});
@@ -180,7 +234,8 @@ public:
       min_leaf_(cfg.min_leaf), min_split_(cfg.min_split),
       max_depth_(cfg.max_depth), max_nodes_(cfg.max_nodes),
       mtry_(cfg.mtry), max_candidates_(cfg.max_candidates),
-      rule_(cfg.rule), min_gain_(cfg.min_gain),
+      rule_(cfg.rule), histogram_bins_(cfg.histogram_bins),
+      histogram_mode_(cfg.histogram_mode), min_gain_(cfg.min_gain),
       smoothing_(cfg.smoothing),
       extra_random_(cfg.extra_random), gen_(gen), out_(out) {}
   void train(const std::vector<int>& ids) { grow(ids, 0); }
@@ -228,7 +283,8 @@ List nf_cpp_fit(NumericMatrix X, NumericVector y, NumericVector weights,
     as<int>(cfg["max_depth"]), as<int>(cfg["max_nodes"]),
     as<int>(cfg["mtry"]), as<int>(cfg["max_candidates"]),
     as<int>(cfg["split_rule"]), as<double>(cfg["min_gain"]),
-    as<double>(cfg["laplace"]), as<bool>(cfg["extra_random"])
+    as<double>(cfg["laplace"]), as<bool>(cfg["extra_random"]),
+    as<int>(cfg["histogram_bins"]), as<int>(cfg["histogram_mode"])
   };
   std::vector<NFModelTree> forest(ntree);
 #ifdef _OPENMP
