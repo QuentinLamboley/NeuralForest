@@ -16,5 +16,7 @@ jobs:
         with:
           extra-packages: any::rcmdcheck, any::testthat
           needs: check
+      - name: Rebuild Rcpp interfaces
+        run: Rscript -e 'Rcpp::compileAttributes(".")'
       - name: Check
         run: Rscript -e 'rcmdcheck::rcmdcheck(".", args=c("--no-manual"), error_on="error")'
