@@ -84,6 +84,38 @@ double surrogate_loss(const std::vector<double>& pred,
   const size_t n=ids.size();
   std::vector<double> dp(n,0.0);
   double value=0.0;
+  if (task==1 && loss==4) {
+    // Smooth average precision: positive precision at differentiable ranks.
+    // Both the surrogate value and its derivative account for prevalence.
+    size_t positives=0;
+    for (size_t a=0;a<n;++a) if(y[ids[a]]>0.5) ++positives;
+    if(positives>0 && positives<n) {
+      const double tau=0.15,inv=1.0/positives;
+      for (size_t a=0;a<n;++a) {
+        if(y[ids[a]]<0.5) continue;
+        double rank=1.0,positive_rank=1.0;
+        for(size_t b=0;b<n;++b) {
+          if(a==b) continue;
+          const double soft=sigmoid((pred[b]-pred[a])/tau);
+          rank+=soft;
+          if(y[ids[b]]>0.5) positive_rank+=soft;
+        }
+        value-=positive_rank/rank*inv;
+        if(derivatives) for(size_t b=0;b<n;++b) {
+          if(a==b) continue;
+          const double soft=sigmoid((pred[b]-pred[a])/tau);
+          const double ds=soft*(1-soft)/tau;
+          const double ispos=y[ids[b]]>0.5?1.0:0.0;
+          const double dg=inv*ds*(ispos*rank-positive_rank)/(rank*rank);
+          dp[b]-=dg;
+          dp[a]+=dg;
+        }
+      }
+      if(derivatives) *derivatives=std::move(dp);
+      return 1.0+value;
+    }
+    loss=0;
+  }
   if (task==1 && loss==3) {
     // Differentiable pairwise ranking surrogate for AUC and similar metrics.
     int count=0;
@@ -175,7 +207,7 @@ List nf_soft_fit(NumericMatrix X,NumericVector y,NumericMatrix Xvalid,
       forest.theta[forest.leaf_offset(t,leaf)]=(classification?prior:pos)+normal(rng)*0.3;
   }
   const int loss=loss_name=="brier"?1:loss_name=="focal"?2:
-                 loss_name=="auc"?3:0;
+                 loss_name=="auc"?3:loss_name=="ap"?4:0;
   std::vector<double> m(forest.theta.size(),0),v(m);
   std::vector<double> best_theta=forest.theta;
   double best_loss=std::numeric_limits<double>::infinity();
@@ -271,6 +303,20 @@ double nf_soft_gradient_check() {
     const double below=forest.forward_row(X,0);
     forest.theta[k]+=step;
     error=std::max(error,std::abs(gradient[k]-(above-below)/(2*step)));
+  }
+  // Verify the analytical gradient of the average-precision surrogate.
+  NumericVector y=NumericVector::create(1.0,0.0,1.0,0.0,1.0);
+  std::vector<double> predictions={0.62,0.47,0.71,0.18,0.54};
+  std::vector<int> ids={0,1,2,3,4};
+  std::vector<double> dp;
+  surrogate_loss(predictions,y,ids,4,1,&dp);
+  for(size_t k=0;k<predictions.size();++k) {
+    predictions[k]+=step;
+    const double above=surrogate_loss(predictions,y,ids,4,1);
+    predictions[k]-=2*step;
+    const double below=surrogate_loss(predictions,y,ids,4,1);
+    predictions[k]+=step;
+    error=std::max(error,std::abs(dp[k]-(above-below)/(2*step)));
   }
   return error;
 }

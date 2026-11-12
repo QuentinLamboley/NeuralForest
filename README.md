@@ -8,6 +8,11 @@ perceptron (MLP). The MLP learns **which observations are difficult to predict**
 from out-of-bag (OOB) errors and adapts sampling probabilities for subsequent
 forests. Its learned input-layer saliencies also guide feature proposals.
 
+Version 0.3 adds a single-weighted sampling option, training-fold-only
+preprocessing, a smooth average-precision surrogate for rare classes, and
+an optional validation-selected regularized linear expert. The expert is
+explicitly identified as a hybrid alternative and can be disabled.
+
 With `differentiable=TRUE`, an auxiliary soft decision-tree ensemble uses
 sigmoid routing and analytic reverse-mode gradients to optimize each split
 projection, threshold and terminal value. A validation-selected mixture combines
@@ -63,6 +68,7 @@ Or install locally after cloning:
     nf_permutation_importance(fit,iris[-id,1:4],iris$Species[-id],
                               repeats=3)
     nf_metrics("classification")
+    fit$timings  # preprocessing, forest selection, soft trees, experts, refit
 
 Regression:
 
@@ -154,6 +160,9 @@ means its reported score is a **selection score**, not an untouched test score.
 | class_balance | None, balanced or auto |
 | adaptive | Target-aware default values |
 | n_threads | OpenMP threads (falls back to serial if unavailable) |
+| sampling_weight_mode | Single prevents duplicating bootstrap weighting in node impurity |
+| linear_expert, linear_penalties | Optional ridge-regularized linear alternative |
+| expert_blend, expert_min_gain | Validation-selected mixture strength and improvement guard |
 | differentiable, soft_n_trees, soft_depth | Train gradient-optimized soft splits |
 | soft_loss | Metric-specific differentiable surrogate or explicit choice |
 | soft_blend | Holdout-selected contribution of differentiable trees |
@@ -180,10 +189,14 @@ diagnostic metric. MASE depends on the observation order.
   importance on a separate holdout for scientific conclusions.
 - Spatial, temporal and group-dependent data require appropriate splits.
   Use the groups argument or your own external evaluation.
+- Linear experts are selected using an internal holdout. This adds model
+  selection capacity; it is not a guarantee of improved test accuracy.
+- Linear and constant experts, when enabled, alter the model family;
+  results must be presented separately from a pure forest.
 - Neural sampling is predictive importance-weighted resampling.
   Soft-tree split parameters are differentiated directly, but AUC, Boyce,
-  F1 and related discrete metrics are approximated by ranking or focal
-  losses; held-out selection uses the actual requested metric.
+  F1 and related discrete metrics use ranking, smooth average-precision,
+  or focal surrogates; held-out selection uses the requested metric.
 - Multiclass AUC uses one-vs-rest averaging; ECE uses confidence calibration.
 - Workload depends strongly on n, p, node size, tree count and neural rounds.
   CPU memory and compute usage can be substantial.

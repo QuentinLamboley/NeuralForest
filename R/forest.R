@@ -34,6 +34,13 @@
 #' @param class_balance none, balanced or auto.
 #' @param adaptive Adapt unset hyperparameters using the target profile.
 #' @param patience Outer validation-based early stopping.
+#' @param sampling_weight_mode Single applies sampling weights once; double
+#'   preserves the legacy split-weighted bootstrap scheme.
+#' @param linear_expert None or auto, selecting a ridge logistic or linear
+#'   expert using a training-only validation set.
+#' @param linear_penalties Positive ridge regularization strengths.
+#' @param expert_blend Mixture coefficients with the linear expert.
+#' @param expert_min_gain Minimum validation improvement for expert selection.
 #' @param differentiable Enable gradient-trained oblique soft trees.
 #' @param soft_n_trees Differentiable trees in the auxiliary ensemble.
 #' @param soft_depth Complete binary soft-tree depth (1 to 7).
@@ -61,6 +68,9 @@ nf_control <- function(
   neural_guidance = 0.6, feature_guidance = 0.25,
   neural_temperature = 0.8, max_weight_ratio = 6,
   class_balance = "auto", adaptive = TRUE, patience = 2L,
+  sampling_weight_mode = "single", linear_expert = "none",
+  linear_penalties = c(0.03, 0.3, 3), expert_blend = c(0.25, 0.5, 0.75, 1),
+  expert_min_gain = 0.001,
   differentiable = FALSE, soft_n_trees = 6L, soft_depth = 3L,
   soft_epochs = 35L, soft_batch = 128L, soft_lr = 0.015,
   soft_temperature = 0.8, soft_loss = "auto", soft_blend = "auto",
@@ -71,6 +81,16 @@ nf_control <- function(
   z$split_rule <- match.arg(split_rule, c("auto","gini","entropy","variance"))
   z$split_search <- match.arg(split_search, c("auto","exact","histogram"))
   z$class_balance <- match.arg(class_balance, c("auto","none","balanced"))
+  z$sampling_weight_mode <- match.arg(sampling_weight_mode,c("single","double"))
+  z$linear_expert <- match.arg(linear_expert,c("none","auto"))
+  if (!length(linear_penalties) || !is.numeric(linear_penalties) ||
+      any(!is.finite(linear_penalties) | linear_penalties <= 0))
+    stop("linear_penalties must be finite and positive")
+  if (!length(expert_blend) || !is.numeric(expert_blend) ||
+      any(!is.finite(expert_blend) | expert_blend <= 0 | expert_blend > 1))
+    stop("expert_blend must lie in (0,1]")
+  if (!is.finite(expert_min_gain) || expert_min_gain<0)
+    stop("expert_min_gain must be nonnegative")
   z$soft_loss <- match.arg(soft_loss,
       c("auto","logloss","brier","focal","auc","mse"))
   if (!(identical(soft_blend,"auto") ||
@@ -301,7 +321,8 @@ nf_native_cfg <- function(ctrl) {
        histogram_mode=if (ctrl$split_search=="histogram") 1L else 0L,
        histogram_bins=ctrl$histogram_bins,
        extra_random=ctrl$extra_random, min_gain=ctrl$min_gain,
-       laplace=ctrl$laplace, n_threads=ctrl$n_threads)
+       laplace=ctrl$laplace, n_threads=ctrl$n_threads,
+       split_weighted=identical(ctrl$sampling_weight_mode,"double"))
 }
 nf_base_weights <- function(y, task, ctrl) {
   w <- rep(1, length(y))
@@ -310,8 +331,8 @@ nf_base_weights <- function(y, task, ctrl) {
     ratio <- max(prop)/max(min(prop),1e-8)
     alpha <- if (ctrl$class_balance=="balanced") 1 else
       if (ctrl$class_balance=="auto") {
-        if (ratio<=1.5) 0.1 else if (ratio<=3) 0.35 else
-          if (ratio<=10) 0.55 else 0.75
+        if (ratio<=1.5) 0 else if (ratio<=3) 0.15 else
+          if (ratio<=10) 0.30 else 0.40
       } else 0
     w <- (1 / pmax(prop[y+1L],1e-8))^alpha
   }
@@ -360,14 +381,14 @@ nf_hardness <- function(y, prediction, task) {
 neural_forest <- function(x, y, task="auto", control=nf_control(),
                           metric=NULL, validation=0.2, seed=42L,
                           groups=NULL, refit=FALSE) {
-  enc <- nf_encoding(x)
-  X <- enc$X
-  if (length(y)!=nrow(X)) stop("Response length differs from predictor rows")
+  now <- function() proc.time()[["elapsed"]]
+  t_initial <- now()
+  if (!is.data.frame(x) && !is.matrix(x))
+    stop("x must be a data.frame or matrix")
+  n <- nrow(x)
+  if (length(y)!=n) stop("Response length differs from predictor rows")
   resp <- nf_response(y,task); y <- resp$y; task <- resp$task
-  n <- length(y)
   if (n < 20) stop("At least 20 training observations are required")
-  profile <- nf_target_profile(y,task,X)
-  ctrl <- nf_resolve_control(control,n,ncol(X),task,profile)
   if (is.null(metric))
     metric <- if (task=="regression") "rmse" else
       if (length(resp$labels)==2) "auc" else "macro_auc"
@@ -376,12 +397,17 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
     stop("Unsupported metric for this task: ", metric)
   split <- nf_split_indices(y, task, validation, seed, groups)
   tr <- split$train; vl <- split$validation
-  Xtr <- X[tr,,drop=FALSE]; ytr <- y[tr]
-  Xval <- X[vl,,drop=FALSE]; yval <- y[vl]
+  ytr <- y[tr]; yval <- y[vl]
   if (task=="classification" && length(unique(ytr)) != length(resp$labels))
     stop("Training split does not contain every response class")
+  enc <- nf_encoding(x[tr,,drop=FALSE])
+  Xtr <- enc$X
+  Xval <- nf_encoding(x[vl,,drop=FALSE],fit=enc$encoding)$X
+  profile <- nf_target_profile(ytr,task,Xtr)
+  ctrl <- nf_resolve_control(control,length(tr),ncol(Xtr),task,profile)
   K <- if (task=="regression") 1L else length(resp$labels)
-  ctrl <- nf_resolve_control(ctrl,length(tr),ncol(X),task,profile)
+  preparation_seconds <- now()-t_initial
+  native_start <- now()
   w0 <- nf_base_weights(ytr,task,ctrl)
   w <- w0
   fw <- rep(1,ncol(X))
@@ -435,7 +461,37 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
       ctrl$feature_guidance * strengths
     fw <- pmax(1e-8,fw)
   }
+  native_seconds <- now()-native_start
+  soft_start <- now()
+  soft_model <- NULL
+  soft_selection <- NULL
+  original_validation_score <- best_score
+  hard_val <- nf_cpp_predict(best$trees,Xval,K,FALSE)
+  if(task=="classification") colnames(hard_val) <- resp$labels
+  if (isTRUE(ctrl$differentiable)) {
+    soft_model <- nf_soft_train(Xtr,ytr,Xval,yval,task,K,ctrl,metric,
+                                seed=seed+1919L)
+    soft_val <- nf_soft_probabilities(soft_model,Xval)
+    soft_selection <- nf_soft_select_blend(
+      hard_val,soft_val,yval,metric,task,resp$labels,ctrl)
+    if (is.finite(soft_selection$score)) best_score <- soft_selection$score
+    alpha <- soft_selection$weight
+    if(alpha>0) hard_val <- (1-alpha)*hard_val+alpha*soft_val
+  }
+  soft_seconds <- now()-soft_start
+  expert_start <- now()
+  expert_selection <- NULL
+  if (identical(ctrl$linear_expert,"auto")) {
+    expert_selection <- nf_expert_selection(
+      hard_val,Xtr,ytr,Xval,yval,metric,task,K,resp$labels,ctrl)
+    if(is.finite(expert_selection$score))
+      best_score <- expert_selection$score
+  }
+  expert_seconds <- now()-expert_start
+  refit_start <- now()
   if (isTRUE(refit)) {
+    # Refit uses all training observations only after inner selection.
+    X <- nf_encoding(x,fit=enc$encoding)$X
     full_w <- nf_base_weights(y,task,ctrl)
     full_fw <- rep(1,ncol(X))
     if (!is.null(best_nn)) {
@@ -453,29 +509,30 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
     best <- nf_cpp_fit(X,y,as.numeric(full_w),as.numeric(full_fw),
                        nf_native_cfg(ctrl),as.integer(task=="classification"),
                        K,as.integer(seed+999983L))
+    if(!is.null(expert_selection) &&
+       identical(expert_selection$type,"linear")) {
+      expert_selection$model <- nf_expert_fit(
+        X,y,task,K,expert_selection$penalty)
+    }
   }
-  soft_model <- NULL
-  soft_selection <- NULL
-  original_validation_score <- best_score
-  if (isTRUE(ctrl$differentiable)) {
-    soft_model <- nf_soft_train(Xtr,ytr,Xval,yval,task,K,ctrl,metric,
-                                seed=seed+1919L)
-    hard_val <- nf_cpp_predict(best$trees,Xval,K,FALSE)
-    if (task=="classification") colnames(hard_val) <- resp$labels
-    soft_val <- nf_soft_probabilities(soft_model,Xval)
-    soft_selection <- nf_soft_select_blend(
-      hard_val,soft_val,yval,metric,task,resp$labels,ctrl)
-    if (is.finite(soft_selection$score)) best_score <- soft_selection$score
-  }
+  refit_seconds <- now()-refit_start
   colnames(best$oob_prediction) <- if (task=="classification")
     resp$labels else "response"
   names(best$importance) <- colnames(X)
+  timings <- list(preprocess_seconds=preparation_seconds,
+                  native_selection_seconds=native_seconds,
+                  soft_selection_seconds=soft_seconds,
+                  expert_selection_seconds=expert_seconds,
+                  final_refit_seconds=refit_seconds,
+                  total_training_seconds=now()-t_initial)
   z <- list(native=best,task=task,levels=resp$labels,encoding=enc$encoding,
             control=ctrl,metric=metric,validation_score=best_score,
             validation_rows=vl,trained_on=if(refit) n else length(tr),
             refit=refit,round=best_round,history=history,
             target_profile=profile,neural=best_nn,
             soft_model=soft_model,soft_selection=soft_selection,
+            expert_selection=expert_selection,prior_target=if(refit)y else ytr,
+            timings=timings,
             native_validation_score=original_validation_score)
   class(z) <- "neural_forest"
   z
@@ -494,6 +551,15 @@ predict.neural_forest <- function(object,newdata,type=c("response","prob","class
     if (alpha>0) {
       soft <- nf_soft_probabilities(object$soft_model,X)
       p <- (1-alpha)*p + alpha*soft
+    }
+  }
+  if (!is.null(object$expert_selection)) {
+    selected <- object$expert_selection
+    if (selected$type=="linear") {
+      expert <- nf_expert_predict(selected$model,X)
+      p <- (1-selected$weight)*p+selected$weight*expert
+    } else if (selected$type=="prior") {
+      p <- nf_prior_probabilities(object$prior_target,K,object$task,nrow(X))
     }
   }
   if (object$task=="regression") {
@@ -548,5 +614,8 @@ nf_diagnostics <- function(object) {
        gradient_surrogate=if (!is.null(object$soft_model))
          object$soft_model$surrogate else NULL,
        differentiable_blend=if (!is.null(object$soft_selection))
-         object$soft_selection else NULL)
+         object$soft_selection else NULL,
+       selected_expert=if(!is.null(object$expert_selection))
+         object$expert_selection$type else NULL,
+       timings=object$timings)
 }

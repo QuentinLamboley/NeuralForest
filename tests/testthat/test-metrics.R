@@ -33,3 +33,10 @@ test_that("tuning returns the best configuration with independent outer folds", 
   expect_equal(nrow(out$results),2)
   expect_true(is.finite(out$best_score))
 })
+
+test_that("average precision uses noninterpolated rank precision", {
+  truth <- factor(c("yes","no","yes","no"),levels=c("no","yes"))
+  p <- c(0.9,0.8,0.7,0.6)
+  expected <- 0.5*(1+2/3)
+  expect_equal(unname(nf_metric(truth,cbind(no=1-p,yes=p),"pr_auc")),expected)
+})

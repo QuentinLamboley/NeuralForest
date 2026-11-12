@@ -29,7 +29,7 @@ struct NFConfig {
   int min_leaf, min_split, max_depth, max_nodes, mtry, max_candidates, rule;
   int histogram_bins, histogram_mode;
   double min_gain, smoothing;
-  bool extra_random;
+  bool extra_random, split_weighted;
 };
 struct NFModelTree {
   std::vector<NFNode> nodes;
@@ -48,15 +48,16 @@ class NFTreeBuilder {
   int task_, K_, p_, min_leaf_, min_split_, max_depth_, max_nodes_;
   int mtry_, max_candidates_, rule_, histogram_bins_, histogram_mode_;
   double min_gain_, smoothing_;
-  bool extra_random_;
+  bool extra_random_, split_weighted_;
   std::mt19937_64& gen_;
   NFModelTree& out_;
 
+  inline double obs_weight(int i) const { return split_weighted_ ? weights_[i] : 1.0; }
   void moments(const std::vector<int>& idx, std::vector<double>& s, double& w) const {
     s.assign(task_ == 0 ? 2 : K_, 0.0);
     w = 0.0;
     for (int i : idx) {
-      const double wi = weights_[i], yi = y_[i];
+      const double wi = obs_weight(i), yi = y_[i];
       w += wi;
       if (task_ == 0) { s[0] += wi * yi; s[1] += wi * yi * yi; }
       else s[static_cast<int>(yi)] += wi;
@@ -136,7 +137,7 @@ class NFTreeBuilder {
         for (int i : idx) {
           const double z = (X_(i,f)-lo)/step;
           const int b = std::min(B-1,std::max(0,static_cast<int>(z)));
-          const double w = weights_[i], yy = y_[i];
+          const double w = obs_weight(i), yy = y_[i];
           ++bin_count[b];
           bin_weights[b] += w;
           if (task_ == 0) {
@@ -172,7 +173,7 @@ class NFTreeBuilder {
       }
       std::vector<NFRow> rows;
       rows.reserve(idx.size());
-      for (int i : idx) rows.push_back({X_(i, f), y_[i], weights_[i]});
+      for (int i : idx) rows.push_back({X_(i, f), y_[i], obs_weight(i)});
       std::sort(rows.begin(), rows.end());
       if (rows.front().x == rows.back().x) continue;
       std::vector<double> left(total.size(), 0.0), right = total;
@@ -237,7 +238,7 @@ public:
       rule_(cfg.rule), histogram_bins_(cfg.histogram_bins),
       histogram_mode_(cfg.histogram_mode), min_gain_(cfg.min_gain),
       smoothing_(cfg.smoothing),
-      extra_random_(cfg.extra_random), gen_(gen), out_(out) {}
+      extra_random_(cfg.extra_random), split_weighted_(cfg.split_weighted), gen_(gen), out_(out) {}
   void train(const std::vector<int>& ids) { grow(ids, 0); }
 };
 static int leaf_of(const NFModelTree& tree, const NumericMatrix& X, int i) {
@@ -273,18 +274,25 @@ List nf_cpp_fit(NumericMatrix X, NumericVector y, NumericVector weights,
     for (int j = 0; j < p; ++j)
       if (!std::isfinite(X(i, j))) stop("Non-finite predictor passed to C++");
   }
+  const double total_sampling_weight = std::accumulate(weights.begin(), weights.end(), 0.0);
+  if (!(total_sampling_weight > 0.0) || !std::isfinite(total_sampling_weight))
+    stop("Sampling weights must have a finite positive sum");
   const bool replace = as<bool>(cfg["replace"]);
   const double fraction = as<double>(cfg["sample_fraction"]);
   const int take = std::max(2, static_cast<int>(std::ceil(fraction * n)));
   if (!replace && take > n) stop("Sample fraction exceeds 1 without replacement");
   const int threads = std::max(1, as<int>(cfg["n_threads"]));
+  if (as<int>(cfg["min_leaf"]) < 1 || as<int>(cfg["min_split"]) < 2 ||
+      as<int>(cfg["max_depth"]) < 1 || as<int>(cfg["mtry"]) < 1 ||
+      as<int>(cfg["max_nodes"]) < 3) stop("Invalid native tree settings");
   const NFConfig native_cfg = {
     as<int>(cfg["min_leaf"]), as<int>(cfg["min_split"]),
     as<int>(cfg["max_depth"]), as<int>(cfg["max_nodes"]),
     as<int>(cfg["mtry"]), as<int>(cfg["max_candidates"]),
     as<int>(cfg["split_rule"]), as<int>(cfg["histogram_bins"]),
     as<int>(cfg["histogram_mode"]), as<double>(cfg["min_gain"]),
-    as<double>(cfg["laplace"]), as<bool>(cfg["extra_random"])
+    as<double>(cfg["laplace"]), as<bool>(cfg["extra_random"]),
+    as<bool>(cfg["split_weighted"])
   };
   std::vector<NFModelTree> forest(ntree);
 #ifdef _OPENMP

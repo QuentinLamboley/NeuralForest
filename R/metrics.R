@@ -47,7 +47,8 @@ nf_pr_auc <- function(y,p) {
   tp <- cumsum(yy)[ends]; fp <- ends-tp
   recall <- c(0,tp/sum(yy))
   precision <- c(1,tp/pmax(1,tp+fp))
-  sum(diff(recall)*(head(precision,-1)+tail(precision,-1))/2)
+  # Average precision uses observed precision at each recall increment.
+  sum(diff(recall)*tail(precision,-1))
 }
 nf_boyce <- function(y,p,bins=20L) {
   if (sum(y==1)<5 || length(unique(p))<3) return(NA_real_)

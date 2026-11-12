@@ -1,0 +1,48 @@
+{
+  "generator": "QuentinLamboley/td-machinelearning",
+  "generator_revision": "48c2b28ca7874cbef1f7dde15de962c6e56c5027",
+  "seeds": [
+    17,
+    43
+  ],
+  "scenarios": [
+    "correlated_30",
+    "distinct_0",
+    "distribution_shift",
+    "identical_100",
+    "intermediate_45",
+    "large_n",
+    "noise_50",
+    "nonlinear_xor",
+    "overlap_80",
+    "presence_bg_1to1",
+    "presence_bg_1to5",
+    "pseudoabsence_hard",
+    "rare_10pct",
+    "rare_3pct",
+    "similar_97",
+    "small_n"
+  ],
+  "models": [
+    "AdaBoost",
+    "CatBoost",
+    "Dummy",
+    "ExtraTrees",
+    "GradientBoosting",
+    "HistGradientBoosting",
+    "LightGBM",
+    "Logistic",
+    "MLP",
+    "NeuralForest_CART",
+    "NeuralForest_Differentiable",
+    "RandomForest",
+    "SVM_RBF",
+    "XGBoost",
+    "ranger"
+  ],
+  "rows": 480,
+  "successes": 480,
+  "failures": [],
+  "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
+  "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43"
+}

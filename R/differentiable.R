@@ -6,8 +6,8 @@
 nf_soft_surrogate <- function(metric, task, choice="auto") {
   if (!identical(choice,"auto")) return(choice)
   if (task=="regression") return("mse")
-  if (metric %in% c("auc","macro_auc","pr_auc","macro_pr_auc",
-                    "boyce","ks","roc_gini","lift")) return("auc")
+  if (metric %in% c("pr_auc","macro_pr_auc")) return("ap")
+  if (metric %in% c("auc","macro_auc","boyce","ks","roc_gini","lift")) return("auc")
   if (metric %in% c("brier","ece","mce")) return("brier")
   if (metric %in% c("logloss","macro_logloss")) return("logloss")
   "focal"
