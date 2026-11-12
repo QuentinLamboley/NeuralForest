@@ -79,3 +79,47 @@ For the presence-background 1:5 experiment, the old two-seed differentiable Boyc
 Two new seeds, 71 and 97, are reported separately in benchmark/results/summary.csv. This helps detect improvements that only reproduce on the previously inspected samples, but two confirmation seeds are not a substitute for an external benchmark suite.
 
 All algorithms' model-selection time, refit time, prediction time and total are published in benchmark/results/COMPUTE_TIME.md and summary.csv. The full per-run record is in all_runs.csv.
+
+## Version 0.4: further engineering review
+
+The previous experiment exposed two shortcomings that were not addressed by
+the v0.3 modifications:
+
+* Neural guidance was warm-started after recomputing predictor means and
+  standard deviations without transporting the first-layer weights. The
+  function represented by the network could change before its first new
+  optimization update. Version 0.4 transports first-layer weights and
+  biases so the original unsaturated function is preserved. Adam moments
+  are reset after the coordinate transformation. A dedicated numerical
+  invariance test checks the predictions before and after transport.
+* The linear experts were restricted to relatively strong ridge penalties.
+  The candidate set now extends into weak regularization, while remaining
+  subject to inner-validation choice. Weak regularization is not always
+  preferable, especially when correlated predictors are numerous.
+
+Binary proper-scoring metrics can now select an out-of-bag Platt calibration
+on the inner-validation fold. The calibrator is fitted on inner-training OOB
+probabilities. If the final native forest is refitted, the calibrator is
+relearned on the refitted forest's OOB predictions. This avoids fitting the
+calibration coefficients to the same validation labels that decide whether
+calibration is applied. The new stage is separately timed.
+
+Version 0.4 adds an explicit calibration-enabled model to the comparison.
+A six-seed trial on the 19 original scenario families includes the four
+v0.3 seeds and two additional confirmation seeds. The 19 x 17 x 6
+design requires 1,938 completed model evaluations before publishing
+a complete report. The results are not expected to favor the new version
+in every condition, and every observed regression must be retained.
+
+### Limitations that cannot be eliminated by software fixes
+
+The data-generating distribution is unknown, so no classifier can guarantee
+uniform dominance on all test distributions. These synthetic examples are
+not a substitute for externally gathered real datasets.
+Metric-specific model selection on a small inner validation sample can
+overfit, particularly for rare-event average precision and Boyce.
+Out-of-bag calibration is approximate because observations are used in
+other trees of the ensemble and model selection remains data-dependent.
+A 0.5 decision threshold does not optimize all thresholded metrics.
+The current benchmark uses bounded and unequal hyperparameter budgets,
+and the recorded wall-clock times are runner-specific.

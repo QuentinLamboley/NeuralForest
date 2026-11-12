@@ -19,13 +19,16 @@ R CMD INSTALL . and execute:
     python benchmark/run.py --group imbalance
     python benchmark/run.py --group structure
     python benchmark/run.py --group presence
+    python benchmark/run.py --group stress
     python benchmark/summarize.py
+    python audit/pair_v03.py
 
 GitHub Actions performs the same steps and records
 summary.csv, all_runs.csv, RESULTS.md and manifest.json.
-Runs use four independent seeds, 17, 43, 71 and 97.
-The first two reproduce the earlier experimental design and the
-last two serve as new confirmation seeds.
+Runs use six independent seeds: 17, 43, 71, 97, 131 and 197.
+The first four match the v0.3 experiment. Seeds 131 and 197
+are new confirmation seeds, included in the dedicated summary
+columns for model ranking and every primary metric.
 
 ## Experimental scenarios
 
@@ -60,13 +63,16 @@ DummyClassifier, LogisticRegression, RandomForest,
 ExtraTrees, GradientBoosting, HistGradientBoosting,
 AdaBoost, XGBoost, LightGBM, CatBoost, RBF SVM,
 multilayer perceptron, ranger, NeuralForest without
-differentiable trees and NeuralForest with
-gradient-trained oblique soft trees.
+differentiable trees, NeuralForest with gradient-trained
+oblique soft trees, NeuralForest with an adaptive ridge expert,
+and NeuralForest with both adaptive expert and optional
+out-of-bag Platt calibration. A direct comparison isolates
+the additional calibration stage.
 
 All models use the same training and independent
 test sets per scenario and seed. Python methods select
 between one or two fixed hyperparameter candidates
-on a 25 percent training-only stratified holdout,
+on a 20 percent training-only stratified holdout,
 then refit to the entire training set. Ranger
 uses a 20 percent training-only holdout.
 NeuralForest selects training rounds and the
@@ -115,7 +121,17 @@ Results include failed runs and undefined metrics.
 
 ## Historical comparisons
 
-The version 0.2 benchmark is frozen under audit/.
+The original v0.2 and v0.3 benchmark results are frozen under audit/.
+The original v0.3 experiments are paired to the new results over the
+same four seeds and the same simulator cases. The new comparison
+reports objective improvements and changes in compute time.
+The Platt calibrator is learned on inner-training OOB predictions
+and activated only for proper scoring metrics when the internal
+validation score improves. A refitted native forest receives
+a freshly fitted OOB calibrator using training labels only.
+Warm-start neural networks are transported into each new scaling
+space, preserving their initial predictions. No test-set labels
+are consulted in any training or parameter-selection step.
 The updated report contains a seed-matched comparison
 for original seeds 17 and 43 and independent confirmation
 means for newly introduced seeds 71 and 97.

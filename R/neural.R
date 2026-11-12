@@ -65,6 +65,30 @@ nf_nn_step <- function(net,forward,target,lr,wd) {
   }
   net
 }
+# Transport a warm-start network to newly standardized coordinates.
+# For an unsaturated input, the prediction is unchanged before new updates.
+nf_nn_transport <- function(previous,new_center,new_scale) {
+  if(is.null(previous$center) || is.null(previous$scale))
+    return(previous)
+  old_center <- previous$center
+  old_scale <- previous$scale
+  if(length(old_center)!=length(new_center) ||
+     any(!is.finite(old_scale)) || any(old_scale<=0))
+    stop("Incompatible warm-start scaling parameters")
+  net <- previous
+  old_W <- net$layers[[1L]]$W
+  conversion <- as.numeric(new_scale/old_scale)
+  offset <- as.numeric((new_center-old_center)/old_scale)
+  net$layers[[1L]]$W <- old_W * conversion
+  net$layers[[1L]]$b <- net$layers[[1L]]$b +
+    as.numeric(crossprod(offset,old_W))
+  net$state <- lapply(net$layers,function(layer)
+    list(mW=layer$W*0,vW=layer$W*0,mb=layer$b*0,vb=layer$b*0))
+  net$t <- 0L
+  net$center <- new_center
+  net$scale <- new_scale
+  net
+}
 nf_nn_train <- function(X,target,ctrl,seed,previous=NULL) {
   set.seed(seed)
   scaled <- nf_nn_scale(X)
@@ -78,9 +102,10 @@ nf_nn_train <- function(X,target,ctrl,seed,previous=NULL) {
              nrow(previous$layers[[1]]$W)==ncol(xx) &&
              identical(vapply(previous$layers,ncol,integer(1)),
                        as.integer(c(ctrl$neural_hidden,1L))))
-    previous else nf_nn_init(ncol(xx),ctrl$neural_hidden,seed)
-  # The centering is recomputed for each round, and the previous net only
-  # provides warm-start weights; all hard-example targets stay OOB.
+    nf_nn_transport(previous,scaled$center,scaled$scale)
+  else nf_nn_init(ncol(xx),ctrl$neural_hidden,seed)
+  # Coordinate transport preserves the learned mapping when the training
+  # distribution changes between rounds; gradients then update that mapping.
   best <- net; best_loss <- Inf; stale <- 0L
   for (epoch in seq_len(ctrl$neural_epochs)) {
     shuffled <- sample(train)

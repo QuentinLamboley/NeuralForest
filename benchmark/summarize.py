@@ -12,10 +12,10 @@ HERE=Path(__file__).resolve().parent
 RAW=HERE/"out"
 RESULTS=HERE/"results"
 BASELINE=ROOT/"audit"/"baseline-v0.2-all_runs.csv"
-SEEDS=(17,43,71,97)
-NEW_SEEDS=(71,97)
+SEEDS=(17,43,71,97,131,197)
+NEW_SEEDS=(131,197)
 SCENARIOS=19
-MODELS=16
+MODELS=17
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce")
 MINIMIZE={"brier","logloss"}
@@ -122,19 +122,19 @@ def summarize():
         "Prediction time includes evaluation inference on the held-out set.",
         "The three stages are also available independently in summary.csv.",
         "",
-        "The experiment covers 19 scenarios, four seeds and 16 methods.",
+        "The experiment covers 19 scenarios, six seeds and 17 methods.",
         f"Successful runs: {manifest['successes']} / {len(data)}.",
-        "Seeds 71 and 97 were not used in the initial v0.2 benchmark.",
+        "Seeds 131 and 197 were not used during the v0.3 experiment.",
         "",
         "## Overall ranking for each scenario",
         "",
-        "| Scenario | Metric | Top three (four-seed mean) | NeuralForest adaptive | Rank | Selection (s) | Final fit (s) | Prediction (s) |",
+        "| Scenario | Metric | Top three (six-seed mean) | NeuralForest calibrated | Rank | Selection (s) | Final fit (s) | Prediction (s) |",
         "| --- | --- | --- | --- | ---: | ---: | ---: | ---: |"]
     for name,g in sm.groupby("scenario"):
         top=g.loc[np.isfinite(g.primary_mean)].sort_values("rank").head(3)
         winners=", ".join(f"{r.model} {fmt(r.primary_mean)}"
                           for r in top.itertuples())
-        nf=g[g.model=="NeuralForest_Adaptive"]
+        nf=g[g.model=="NeuralForest_Calibrated"]
         if len(nf):
             row=nf.iloc[0]
             values=(fmt(row.primary_mean),str(int(row["rank"])),
@@ -156,12 +156,12 @@ def summarize():
         "a pairwise logistic surrogate. Test performance always uses the",
         "original metric, not its surrogate.",
         "",
-        "NeuralForest_Adaptive includes ridge-regularized linear and constant",
+        "NeuralForest_Adaptive and NeuralForest_Calibrated include ridge-regularized linear and constant",
         "experts. Its performance must be interpreted as a hybrid ensemble,",
         "not attributed exclusively to learned tree divisions.",
         "",
         "Historical seed-matched v0.2 comparisons are in",
-        "paired_v02_comparison.csv. Means over seeds 71 and 97 appear in",
+        "paired_v02_comparison.csv. Means over seeds 131 and 197 appear in",
         "new_seed_primary_mean and new_seed_rank in summary.csv.",
         "",
         "Presence-background training negatives are not confirmed human",
@@ -177,6 +177,7 @@ def summarize():
         "- all_runs.csv: all metrics, configurations and timed stages",
         "- summary.csv: mean, standard deviation, ranking and phase timings",
         "- paired_v02_comparison.csv: paired original-seed differences",
+        "- paired_v03_comparison.csv: 4-seed paired v0.3 versus v0.4 comparison",
         "- manifest.json: provenance, seeds, failures and environment",
         "- benchmark/README.md: full experimental protocol and limitations"
     ])

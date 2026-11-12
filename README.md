@@ -8,6 +8,13 @@ perceptron (MLP). The MLP learns **which observations are difficult to predict**
 from out-of-bag (OOB) errors and adapts sampling probabilities for subsequent
 forests. Its learned input-layer saliencies also guide feature proposals.
 
+Version 0.4 stabilizes neural warm starts when input scaling changes between
+rounds, broadens ridge-regularization candidates, and optionally learns binary
+probability calibration on out-of-bag predictions. The validation fold selects
+whether calibration is used; calibration is disabled unless explicitly
+requested. Improvements to rank-based or binary decision metrics are not
+guaranteed.
+
 Version 0.3 adds a single-weighted sampling option, training-fold-only
 preprocessing, a smooth average-precision surrogate for rare classes, and
 an optional validation-selected regularized linear expert. The expert is
@@ -162,6 +169,8 @@ means its reported score is a **selection score**, not an untouched test score.
 | n_threads | OpenMP threads (falls back to serial if unavailable) |
 | sampling_weight_mode | Single prevents duplicating bootstrap weighting in node impurity |
 | linear_expert, linear_penalties | Optional ridge-regularized linear alternative |
+| calibration, calibration_penalties | Optional out-of-bag Platt calibration of binary probabilities |
+| calibration_min_gain | Required holdout improvement before calibration is selected |
 | expert_blend, expert_min_gain | Validation-selected mixture strength and improvement guard |
 | differentiable, soft_n_trees, soft_depth | Train gradient-optimized soft splits |
 | soft_loss | Metric-specific differentiable surrogate or explicit choice |
@@ -189,6 +198,10 @@ diagnostic metric. MASE depends on the observation order.
   importance on a separate holdout for scientific conclusions.
 - Spatial, temporal and group-dependent data require appropriate splits.
   Use the groups argument or your own external evaluation.
+- Neural warm starts now transport first-layer weights to each new
+  standardized input space, preserving the initial prediction function.
+- A held-out selector can accept or reject OOB Platt probability calibration;
+  it is not a substitute for external calibration assessment.
 - Linear experts are selected using an internal holdout. This adds model
   selection capacity; it is not a guarantee of improved test accuracy.
 - Linear and constant experts, when enabled, alter the model family;

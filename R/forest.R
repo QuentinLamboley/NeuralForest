@@ -41,6 +41,10 @@
 #' @param linear_penalties Positive ridge regularization strengths.
 #' @param expert_blend Mixture coefficients with the linear expert.
 #' @param expert_min_gain Minimum validation improvement for expert selection.
+#' @param calibration None or auto, using regularized OOB Platt scaling for
+#'   proper-scoring metrics and independent holdout selection.
+#' @param calibration_penalties Positive regularization strengths for calibration.
+#' @param calibration_min_gain Minimum holdout improvement required to calibrate.
 #' @param differentiable Enable gradient-trained oblique soft trees.
 #' @param soft_n_trees Differentiable trees in the auxiliary ensemble.
 #' @param soft_depth Complete binary soft-tree depth (1 to 7).
@@ -69,8 +73,10 @@ nf_control <- function(
   neural_temperature = 0.8, max_weight_ratio = 6,
   class_balance = "auto", adaptive = TRUE, patience = 2L,
   sampling_weight_mode = "single", linear_expert = "none",
-  linear_penalties = c(0.03, 0.3, 3), expert_blend = c(0.25, 0.5, 0.75, 1),
+  linear_penalties = c(0.0005,0.005,0.05,0.5,3), expert_blend = c(0.25, 0.5, 0.75, 1),
   expert_min_gain = 0.001,
+  calibration = "none", calibration_penalties=c(0.02,0.15,1),
+  calibration_min_gain=0.0001,
   differentiable = FALSE, soft_n_trees = 6L, soft_depth = 3L,
   soft_epochs = 35L, soft_batch = 128L, soft_lr = 0.015,
   soft_temperature = 0.8, soft_loss = "auto", soft_blend = "auto",
@@ -83,6 +89,13 @@ nf_control <- function(
   z$class_balance <- match.arg(class_balance, c("auto","none","balanced"))
   z$sampling_weight_mode <- match.arg(sampling_weight_mode,c("single","double"))
   z$linear_expert <- match.arg(linear_expert,c("none","auto"))
+  z$calibration <- match.arg(calibration,c("none","auto"))
+  if(!is.numeric(calibration_penalties) || !length(calibration_penalties) ||
+     any(!is.finite(calibration_penalties) | calibration_penalties<=0))
+    stop("calibration_penalties must be positive and finite")
+  if(length(calibration_min_gain)!=1L ||
+     !is.finite(calibration_min_gain) || calibration_min_gain<0)
+    stop("calibration_min_gain must be nonnegative and finite")
   if (!length(linear_penalties) || !is.numeric(linear_penalties) ||
       any(!is.finite(linear_penalties) | linear_penalties <= 0))
     stop("linear_penalties must be finite and positive")
@@ -92,7 +105,7 @@ nf_control <- function(
   if (!is.finite(expert_min_gain) || expert_min_gain<0)
     stop("expert_min_gain must be nonnegative")
   z$soft_loss <- match.arg(soft_loss,
-      c("auto","logloss","brier","focal","auc","mse"))
+      c("auto","logloss","brier","focal","auc","ap","mse"))
   if (!(identical(soft_blend,"auto") ||
         (is.numeric(soft_blend) && length(soft_blend)>0L &&
          all(is.finite(soft_blend)) &&
@@ -468,6 +481,18 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
   original_validation_score <- best_score
   hard_val <- nf_cpp_predict(best$trees,Xval,K,FALSE)
   if(task=="classification") colnames(hard_val) <- resp$labels
+  calibration_start <- now()
+  calibration <- NULL
+  if(identical(ctrl$calibration,"auto") &&
+     task=="classification" && K==2L) {
+    calibration <- nf_platt_select(
+      best,ytr,hard_val,yval,metric,resp$labels,ctrl)
+    if(!is.null(calibration)) {
+      hard_val <- nf_platt_apply(hard_val,calibration)
+      best_score <- calibration$selected_score
+    }
+  }
+  calibration_seconds <- now()-calibration_start
   if (isTRUE(ctrl$differentiable)) {
     soft_model <- nf_soft_train(Xtr,ytr,Xval,yval,task,K,ctrl,metric,
                                 seed=seed+1919L)
@@ -509,6 +534,10 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
     best <- nf_cpp_fit(X,y,as.numeric(full_w),as.numeric(full_fw),
                        nf_native_cfg(ctrl),as.integer(task=="classification"),
                        K,as.integer(seed+999983L))
+    if(!is.null(calibration)) {
+      full_cal <- nf_platt_fit(best$oob_prediction,y,calibration$penalty)
+      if(!is.null(full_cal)) calibration <- full_cal
+    }
     if(!is.null(expert_selection) &&
        identical(expert_selection$type,"linear")) {
       expert_selection$model <- nf_expert_fit(
@@ -521,6 +550,7 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
   names(best$importance) <- colnames(Xtr)
   timings <- list(preprocess_seconds=preparation_seconds,
                   native_selection_seconds=native_seconds,
+                  calibration_selection_seconds=calibration_seconds,
                   soft_selection_seconds=soft_seconds,
                   expert_selection_seconds=expert_seconds,
                   final_refit_seconds=refit_seconds,
@@ -531,6 +561,7 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
             refit=refit,round=best_round,history=history,
             target_profile=profile,neural=best_nn,
             soft_model=soft_model,soft_selection=soft_selection,
+            calibration=calibration,
             expert_selection=expert_selection,prior_target=if(refit)y else ytr,
             timings=timings,
             native_validation_score=original_validation_score)
@@ -546,6 +577,8 @@ predict.neural_forest <- function(object,newdata,type=c("response","prob","class
   K <- if (object$task=="regression") 1L else length(object$levels)
   if (type=="trees") return(nf_cpp_predict(object$native$trees,X,K,TRUE))
   p <- nf_cpp_predict(object$native$trees,X,K,FALSE)
+  if (!is.null(object$calibration))
+    p <- nf_platt_apply(p,object$calibration)
   if (!is.null(object$soft_model) && !is.null(object$soft_selection)) {
     alpha <- object$soft_selection$weight
     if (alpha>0) {
@@ -617,5 +650,7 @@ nf_diagnostics <- function(object) {
          object$soft_selection else NULL,
        selected_expert=if(!is.null(object$expert_selection))
          object$expert_selection$type else NULL,
+       calibration=if(!is.null(object$calibration))
+         object$calibration else NULL,
        timings=object$timings)
 }

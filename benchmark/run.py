@@ -35,7 +35,7 @@ from sklearn.svm import SVC
 from design import SCENARIOS, create_data
 
 ROOT=Path(__file__).resolve().parents[1]
-SELECTION_SEEDS=(17,43,71,97)
+SELECTION_SEEDS=(17,43,71,97,131,197)
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce")
 LOWER={"brier","logloss"}
@@ -230,7 +230,7 @@ def run_case(spec,seed,output):
     except Exception as exc:
         message=f"{type(exc).__name__}: {exc}"
         for model in ("ranger","NeuralForest_CART","NeuralForest_Differentiable",
-                      "NeuralForest_Adaptive"):
+                      "NeuralForest_Adaptive","NeuralForest_Calibrated"):
             add(model,None,np.nan,np.nan,np.nan,"",status="error",error=message)
     output.mkdir(parents=True,exist_ok=True)
     pd.DataFrame(rows).to_csv(output/f"{dataset_id}.csv",index=False)

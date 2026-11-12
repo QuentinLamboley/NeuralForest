@@ -14,8 +14,10 @@ nf_control(n_trees=300L, mtry=NULL, min_leaf=NULL, min_split=NULL,
   neural_temperature=0.8, max_weight_ratio=6,
   class_balance="auto", adaptive=TRUE, patience=2L,
   sampling_weight_mode="single", linear_expert="none",
-  linear_penalties=c(0.03,0.3,3), expert_blend=c(0.25,0.5,0.75,1),
-  expert_min_gain=0.001, differentiable=FALSE, soft_n_trees=6L, soft_depth=3L,
+  linear_penalties=c(0.0005,0.005,0.05,0.5,3),
+  expert_blend=c(0.25,0.5,0.75,1), expert_min_gain=0.001,
+  calibration="none", calibration_penalties=c(0.02,0.15,1),
+  calibration_min_gain=0.0001, differentiable=FALSE, soft_n_trees=6L, soft_depth=3L,
   soft_epochs=35L, soft_batch=128L, soft_lr=0.015,
   soft_temperature=0.8, soft_loss="auto", soft_blend="auto",
   soft_weight_decay=1e-4, soft_patience=7L, soft_clip=4,
@@ -58,6 +60,9 @@ nf_control(n_trees=300L, mtry=NULL, min_leaf=NULL, min_split=NULL,
 \item{linear_penalties}{Candidate positive ridge penalties.}
 \item{expert_blend}{Candidate linear expert mixture coefficients.}
 \item{expert_min_gain}{Minimum validation improvement required to replace the current model with an expert.}
+\item{calibration}{None or auto: learn an out-of-bag Platt calibration and select it on internal validation for proper scoring metrics. Binary classification only.}
+\item{calibration_penalties}{Positive regularization strengths tested in the out-of-bag calibration.}
+\item{calibration_min_gain}{Minimum held-out score improvement to activate calibration.}
 \item{differentiable}{Train soft oblique trees by gradient descent and validate a mixture with the native forest.}
 \item{soft_n_trees}{Differentiable trees in the secondary ensemble.}
 \item{soft_depth}{Depth of each differentiable tree, from 1 to 7.}

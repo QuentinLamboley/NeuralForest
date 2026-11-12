@@ -27,7 +27,7 @@ neural_forest(x, y, task="auto", control=nf_control(), metric=NULL,
 \item{...}{Unused additional arguments.}
 }
 \value{A fitted neural_forest object; predict returns classes, numeric predictions, or arrays.}
-\details{The observation-priority network adjusts sample weights and feature proposals. When differentiable=TRUE, an additional ensemble of soft oblique trees learns split projections and thresholds by backpropagation with Adam. This ensemble uses a differentiable surrogate for non-differentiable metrics and its mixing coefficient is selected on internal validation data. The validation score is used for model selection and is not an unbiased test-set estimate.}
+\details{The observation-priority network adjusts sample weights and feature proposals. When differentiable=TRUE, an additional ensemble of soft oblique trees learns split projections and thresholds by backpropagation with Adam. This ensemble uses a differentiable surrogate for non-differentiable metrics and its mixing coefficient is selected on internal validation data. When calibration="auto" in binary classification, Platt calibration is fitted to out-of-bag predictions, then accepted only if it improves a proper scoring metric on internal validation. Refit recalibrates using out-of-bag predictions from the final native ensemble. The validation score is used for model selection and is not an unbiased test-set estimate.}
 \examples{
 fit <- neural_forest(iris[,1:4], iris$Species, metric="accuracy",
    control=nf_control(n_trees=15,neural=FALSE), seed=42)
