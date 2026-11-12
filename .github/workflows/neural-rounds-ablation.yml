@@ -1,0 +1,62 @@
+name: Neural rounds ablation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'audit/rounds_ablation.py'
+      - 'audit/rounds_fit.R'
+      - '.github/workflows/neural-rounds-ablation.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ablation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: QuentinLamboley/td-machinelearning
+          ref: 48c2b28ca7874cbef1f7dde15de962c6e56c5027
+          path: td-source
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::Rcpp, any::jsonlite
+          needs: check
+      - name: Install Python packages
+        run: python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4" "scipy>=1.12,<2" "scikit-learn>=1.5,<2"
+      - name: Install package
+        run: R CMD INSTALL .
+      - name: Compare two and three guided rounds
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+          NUMEXPR_NUM_THREADS: '1'
+          PYTHONHASHSEED: '0'
+        run: python audit/rounds_ablation.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neural-rounds-ablation
+          path: |
+            audit/rounds_results.csv
+            audit/rounds_report.md
+          if-no-files-found: warn
+      - name: Publish measured ablation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add audit/rounds_results.csv audit/rounds_report.md
+          if ! git diff --staged --quiet; then
+            git commit -m "Publish guided-round ablation on independent seeds"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
