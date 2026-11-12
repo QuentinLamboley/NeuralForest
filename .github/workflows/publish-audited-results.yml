@@ -1,7 +1,7 @@
 name: Publish audited benchmark results
 on:
   push:
-    paths: ['.github/workflows/publish-audited-results.yml']
+    paths: ['.github/workflows/publish-audited-results.yml', 'audit/pair_previous.py']
   workflow_dispatch:
 permissions:
   contents: write

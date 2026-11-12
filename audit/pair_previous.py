@@ -1,6 +1,7 @@
 """Compare original v0.2 measurements with the same-seed audited run."""
 from __future__ import annotations
 import csv
+import math
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -10,6 +11,11 @@ OUTPUT=ROOT/"benchmark"/"results"/"paired_v02_comparison.csv"
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce")
 LOWER={"brier","logloss"}
+def number(value):
+    try:
+        return float(value)
+    except (TypeError,ValueError):
+        return float("nan")
 def read_rows(path):
     with path.open(newline="",encoding="utf8") as f:
         return list(csv.DictReader(f))
@@ -26,10 +32,11 @@ def compare():
         prior=baseline[key]
         metric=row["selected_metric"]
         metric_column="roc_auc" if metric=="auc" else metric
-        value_old=float(prior[metric_column])
-        value_new=float(row[metric_column])
+        value_old=number(prior[metric_column])
+        value_new=number(row[metric_column])
         diff=value_new-value_old
         if metric in LOWER: diff=-diff
+        if not math.isfinite(diff): diff=""
         record=dict(
             scenario=row["scenario"],seed=row["seed"],model=row["model"],
             primary_metric=metric,baseline_primary=value_old,
