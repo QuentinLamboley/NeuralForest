@@ -23,7 +23,9 @@ R CMD INSTALL . and execute:
 
 GitHub Actions performs the same steps and records
 summary.csv, all_runs.csv, RESULTS.md and manifest.json.
-Runs use two independent seeds, 17 and 43.
+Runs use four independent seeds, 17, 43, 71 and 97.
+The first two reproduce the earlier experimental design and the
+last two serve as new confirmation seeds.
 
 ## Experimental scenarios
 
@@ -37,6 +39,10 @@ Imbalance: 10 percent vampires, 3 percent vampires,
 small samples and large samples.
 Structure: 50 noise features, 30 correlated predictors,
 nonlinear XOR outcome and changed test distribution.
+Stress: one percent vampires, 20 percent noisy class labels,
+and 15 percent missing values in each predictor.
+Missing data are median-imputed from each training partition
+without using its corresponding validation/test partition.
 Presence only: observed vampires versus randomly drawn
 unlabeled background at ratios 1:1 and 1:5, or
 background points selected to be environmentally
@@ -106,3 +112,12 @@ The code and data are synthetic experiments.
 Performance on these scenarios does not establish
 universal superiority on other datasets.
 Results include failed runs and undefined metrics.
+
+## Historical comparisons
+
+The version 0.2 benchmark is frozen under audit/.
+The updated report contains a seed-matched comparison
+for original seeds 17 and 43 and independent confirmation
+means for newly introduced seeds 71 and 97.
+Changes to hyperparameter budgets and algorithm composition
+are recorded in the configurations of each run.

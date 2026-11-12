@@ -52,6 +52,11 @@ SCENARIOS = {
         Scenario("presence_bg_1to1",1400,60,0.28,"boyce","bg1"),
         Scenario("presence_bg_1to5",2800,60,0.28,"boyce","bg5"),
         Scenario("pseudoabsence_hard",2400,70,0.28,"boyce","hard")
+    ],
+    "stress": [
+        Scenario("rare_1pct",5000,55,0.01,"pr_auc"),
+        Scenario("label_noise_20pct",1100,55,0.5,"auc","labelnoise"),
+        Scenario("missing_15pct",1200,65,0.5,"auc","missing")
     ]
 }
 ALL_SCENARIOS = {s.key:s for v in SCENARIOS.values() for s in v}
@@ -71,6 +76,13 @@ def augment(df: pd.DataFrame, kind: str, seed: int) -> pd.DataFrame:
         data["Vampirisme"]=(
             (data["Regeneration"].to_numpy()>5.5) ^
             (data["Fer"].to_numpy()>95.0)).astype(int)
+    elif kind=="labelnoise":
+        flips=rng.random(len(data))<0.20
+        data.loc[flips,"Vampirisme"]=1-data.loc[flips,"Vampirisme"]
+    elif kind=="missing":
+        for key in KEYS:
+            mask=rng.random(len(data))<0.15
+            data.loc[mask,key]=np.nan
     return data
 
 def create_data(spec: Scenario, seed: int):

@@ -29,12 +29,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
 from sklearn.svm import SVC
 
 from design import SCENARIOS, create_data
 
 ROOT=Path(__file__).resolve().parents[1]
-SELECTION_SEEDS=(17,43)
+SELECTION_SEEDS=(17,43,71,97)
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce")
 LOWER={"brier","logloss"}
@@ -129,7 +130,7 @@ def model_candidates(seed):
 
 def evaluate_sklearn(candidates,Xtr,ytr,Xte,yte,selection_metric,seed):
     xa,xb,ya,yb=train_test_split(
-        Xtr,ytr,test_size=0.25,stratify=ytr,random_state=seed+57)
+        Xtr,ytr,test_size=0.2,stratify=ytr,random_state=seed+57)
     output=[]
     with warnings.catch_warnings():
       warnings.simplefilter("ignore")
@@ -139,7 +140,7 @@ def evaluate_sklearn(candidates,Xtr,ytr,Xte,yte,selection_metric,seed):
         best_i=None
         for i,maker in enumerate(options):
             try:
-                m=maker()
+                m=make_pipeline(SimpleImputer(strategy="median"),maker())
                 m.fit(xa,ya)
                 valp=m.predict_proba(xb)[:,list(m.classes_).index(1)]
                 score=objective(metric_table(yb,valp),selection_metric)
@@ -148,14 +149,18 @@ def evaluate_sklearn(candidates,Xtr,ytr,Xte,yte,selection_metric,seed):
             except Exception as exc:
                 if best_i is None and i==len(options)-1: raise
         if best_i is None: raise RuntimeError("No valid model parameters")
-        model=options[best_i]()
+        selection_time=time.perf_counter()-t0
+        t_final=time.perf_counter()
+        model=make_pipeline(SimpleImputer(strategy="median"),options[best_i]())
         model.fit(Xtr,ytr)
-        train_time=time.perf_counter()-t0
+        fit_time=time.perf_counter()-t_final
+        train_time=selection_time+fit_time
         t1=time.perf_counter()
         p=model.predict_proba(Xte)[:,list(model.classes_).index(1)]
         pred_time=time.perf_counter()-t1
         output.append((name,p,float(train_time),float(pred_time),
-                       float(best_s),f"trial={best_i+1}/{len(options)}"))
+                       float(best_s),f"trial={best_i+1}/{len(options)}",
+                       float(selection_time),float(fit_time)))
     return output
 
 def evaluate_R(train,test,metric,seed,root):
@@ -178,7 +183,8 @@ def run_case(spec,seed,output):
     yte=test["Vampirisme"].to_numpy(dtype=int)
     dataset_id=f"{spec.key}_{seed}"
     rows=[]
-    def add(name,p,trainsec,predsec,inner_score,config,status="ok",error=""):
+    def add(name,p,trainsec,predsec,inner_score,config,
+            selectionsec=np.nan,finalfitsec=np.nan,status="ok",error=""):
         if status=="ok":
             metrics=metric_table(yte,p)
         else:
@@ -192,21 +198,22 @@ def run_case(spec,seed,output):
             prevalence=spec.prevalence,extension=spec.extension,
             target_semantics=metadata["label_semantics"],
             train_seconds=trainsec,predict_seconds=predsec,
+            selection_seconds=selectionsec,final_fit_seconds=finalfitsec,
             total_seconds=trainsec+predsec,
             validation_score=inner_score,configuration=config,
             status=status,error=error,**metrics))
     try:
-        for name,p,tr,pt,inner,config in evaluate_sklearn(
+        for name,p,tr,pt,inner,config,select,final in evaluate_sklearn(
                 model_candidates(seed),Xtr,ytr,Xte,yte,spec.target_metric,seed):
-            add(name,p,tr,pt,inner,config)
+            add(name,p,tr,pt,inner,config,select,final)
     except Exception:
         # Try every baseline independently so one dependency/estimator failure
         # cannot mask the other algorithms.
         for name,makers in model_candidates(seed).items():
             try:
-                for nm,p,tr,pt,inner,config in evaluate_sklearn(
+                for nm,p,tr,pt,inner,config,select,final in evaluate_sklearn(
                         {name:makers},Xtr,ytr,Xte,yte,spec.target_metric,seed):
-                    add(nm,p,tr,pt,inner,config)
+                    add(nm,p,tr,pt,inner,config,select,final)
             except Exception as exc:
                 add(name,None,np.nan,np.nan,np.nan,"",
                     status="error",error=f"{type(exc).__name__}: {exc}")
@@ -217,10 +224,13 @@ def run_case(spec,seed,output):
                 raise ValueError("R output and test sample lengths differ")
             add(run["name"],p,float(run["train_seconds"]),
                 float(run["prediction_seconds"]),
-                float(run["validation_score"]),run.get("configuration",""))
+                float(run["validation_score"]),run.get("configuration",""),
+                float(run.get("selection_seconds",np.nan)),
+                float(run.get("final_fit_seconds",np.nan)))
     except Exception as exc:
         message=f"{type(exc).__name__}: {exc}"
-        for model in ("ranger","NeuralForest_CART","NeuralForest_Differentiable"):
+        for model in ("ranger","NeuralForest_CART","NeuralForest_Differentiable",
+                      "NeuralForest_Adaptive"):
             add(model,None,np.nan,np.nan,np.nan,"",status="error",error=message)
     output.mkdir(parents=True,exist_ok=True)
     pd.DataFrame(rows).to_csv(output/f"{dataset_id}.csv",index=False)
