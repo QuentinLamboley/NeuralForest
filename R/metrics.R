@@ -170,7 +170,8 @@ nf_metric <- function(actual,predicted,metric,task="auto",threshold=0.5,
       any(P < -1e-9) || any(P > 1+1e-9) ||
       any(!ytext %in% labs))
     stop("Invalid probability matrix or mismatched class labels")
-  P <- pmax(0,pmin(1,P))
+  P[P < 0] <- 0
+  P[P > 1] <- 1
   P <- P/pmax(rowSums(P),1e-12)
   K <- ncol(P); n <- nrow(P)
   idx <- match(ytext,labs)

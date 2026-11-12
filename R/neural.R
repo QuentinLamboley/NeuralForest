@@ -18,7 +18,8 @@ nf_nn_scale <- function(X, center=NULL, scale=NULL) {
     scale[!is.finite(scale)|scale<1e-8] <- 1
   }
   z <- sweep(sweep(X,2L,center,"-"),2L,scale,"/")
-  z <- pmax(-8,pmin(8,z))
+  z[z > 8] <- 8
+  z[z < -8] <- -8
   list(X=z,center=center,scale=scale)
 }
 nf_nn_forward <- function(net,X) {

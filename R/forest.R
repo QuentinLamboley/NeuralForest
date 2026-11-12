@@ -126,15 +126,28 @@ nf_encoding <- function(x, fit = NULL) {
     stop("x must be a data.frame or matrix")
   d <- as.data.frame(x, optional=TRUE, stringsAsFactors=FALSE)
   if (!ncol(d) || !nrow(d)) stop("Predictors cannot be empty")
-  names(d) <- make.unique(make.names(names(d)))
+  nm <- names(d)
+  if (is.null(nm) || length(nm) != ncol(d)) nm <- rep("",ncol(d))
+  nm[is.na(nm) | !nzchar(nm)] <- paste0("V",which(is.na(nm) | !nzchar(nm)))
+  names(d) <- make.unique(make.names(nm))
+  raw_missing <- vapply(d, function(v)
+    mean(if (is.numeric(v)) !is.finite(v) else is.na(v)), numeric(1))
   if (is.null(fit)) {
+    numeric_medians <- numeric(0)
     for (j in seq_along(d)) {
       if (inherits(d[[j]], c("Date","POSIXt"))) d[[j]] <- as.numeric(d[[j]])
       if (is.character(d[[j]]) || is.factor(d[[j]]) || is.logical(d[[j]])) {
         v <- as.character(d[[j]])
         v[is.na(v)] <- "(Missing)"
         d[[j]] <- factor(v, levels=unique(c(sort(unique(v)), "(Other)")))
-      } else if (!is.numeric(d[[j]])) stop("Unsupported predictor type: ",names(d)[j])
+      } else if (is.numeric(d[[j]])) {
+        z <- as.numeric(d[[j]])
+        z[!is.finite(z)] <- NA_real_
+        m <- if (all(is.na(z))) 0 else stats::median(z,na.rm=TRUE)
+        z[is.na(z)] <- m
+        d[[j]] <- z
+        numeric_medians[names(d)[j]] <- m
+      } else stop("Unsupported predictor type: ",names(d)[j])
     }
     terms <- stats::terms(~ . - 1, data=d)
     xlev <- lapply(d[vapply(d, is.factor, logical(1))], levels)
@@ -144,7 +157,8 @@ nf_encoding <- function(x, fit = NULL) {
       if (all(is.na(z))) 0 else stats::median(z, na.rm=TRUE)
     })
     structure <- list(input_names=names(d), terms=terms, xlev=xlev,
-                      columns=colnames(mat), medians=med)
+                      columns=colnames(mat), medians=med,
+                      numeric_medians=numeric_medians)
   } else {
     structure <- fit
     if (!identical(names(d),structure$input_names))
@@ -159,6 +173,9 @@ nf_encoding <- function(x, fit = NULL) {
       } else {
         if (inherits(d[[j]], c("Date","POSIXt"))) d[[j]] <- as.numeric(d[[j]])
         if (!is.numeric(d[[j]])) stop("Numeric predictor has changed type: ",nm)
+        z <- as.numeric(d[[j]])
+        z[!is.finite(z)] <- structure$numeric_medians[[nm]]
+        d[[j]] <- z
       }
     }
     mat <- stats::model.matrix(structure$terms, data=d, na.action=stats::na.pass,
@@ -171,7 +188,7 @@ nf_encoding <- function(x, fit = NULL) {
     }
     mat <- mat[,structure$columns,drop=FALSE]
   }
-  miss <- mean(!is.finite(mat))
+  miss <- mean(raw_missing)
   for (j in seq_len(ncol(mat))) {
     bad <- !is.finite(mat[,j])
     if (any(bad)) mat[bad,j] <- structure$medians[j]
