@@ -20,7 +20,10 @@ nf_pu_scale <- function(X,center=NULL,spread=NULL) {
     spread[!is.finite(spread)|spread<1e-7] <- 1
   }
   z <- sweep(sweep(X,2,center,"-"),2,spread,"/")
-  z <- pmax(-8,pmin(8,z))
+  # Preserve matrix dimensions: pmin/pmax with a scalar in the
+  # first argument can silently return an ordinary vector in R.
+  z[z>8] <- 8
+  z[z< -8] <- -8
   list(X=z,center=center,spread=spread)
 }
 

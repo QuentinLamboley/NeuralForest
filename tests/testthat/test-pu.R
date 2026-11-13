@@ -43,6 +43,9 @@ test_that("PU forest training respects group interpretation and priors", {
   expect_true(is.finite(guided$validation_pu_risk))
   expect_equal(dim(predict(baseline,x[1:25,,drop=FALSE],
                            type="prob")),c(25L,2L))
+  z <- NeuralForest:::nf_pu_scale(as.matrix(x[1,,drop=FALSE]))
+  expect_true(is.matrix(z$X))
+  expect_equal(dim(z$X),c(1L,2L))
 })
 
 test_that("PU predictions ignore all external outcome labels", {
