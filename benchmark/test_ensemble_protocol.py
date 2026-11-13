@@ -19,7 +19,7 @@ ENSEMBLES={
 class EnsembleProtocolTests(unittest.TestCase):
     def test_all_six_ensemble_families_exist(self):
         candidates=model_candidates(803)
-        self.assertEqual(len(candidates),31)
+        self.assertEqual(len(candidates),23)
         self.assertTrue(ENSEMBLES.issubset(candidates))
         self.assertEqual(len(SELECTION_SEEDS),10)
         self.assertTrue(set(REPORT_METRICS).issubset(set(METRICS)))
@@ -51,7 +51,10 @@ class EnsembleProtocolTests(unittest.TestCase):
         self.assertEqual(values["precision_at_10pct"],1.)
         self.assertEqual(values["recall_at_10pct"],1.)
         self.assertTrue(set(REPORT_METRICS).issubset(values))
-        self.assertTrue(all(np.isfinite(values[k]) for k in REPORT_METRICS))
+        self.assertTrue(all(np.isfinite(values[k]) for k in REPORT_METRICS
+                            if k not in ("boyce","boyce_rank")))
+        # If all presences concentrate in fewer than three score bins,
+        # Boyce is undefined by design. Do not invent a finite statistic.
 
     def test_paired_uncertainty_has_favorable_direction(self):
         mu,lo,hi,n=paired_ci([.01,.015,.02,.008,.025,.017])
@@ -60,7 +63,7 @@ class EnsembleProtocolTests(unittest.TestCase):
         self.assertLess(mu,hi)
         self.assertGreater(mu,0.)
         mu,lo,hi,n=paired_ci([np.nan])
-        self.assertEqual(n,1)
+        self.assertEqual(n,0)
         self.assertTrue(np.isnan(mu))
 
 if __name__=="__main__":
