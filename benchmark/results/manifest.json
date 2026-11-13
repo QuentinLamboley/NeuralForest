@@ -9,11 +9,13 @@
     131,
     197,
     251,
-    347
+    347,
+    401,
+    503
   ],
   "new_confirmation_seeds": [
-    251,
-    347
+    401,
+    503
   ],
   "scenarios": [
     "correlated_30",
@@ -60,13 +62,25 @@
     "RF_Subsample80",
     "RandomForest",
     "SVM_RBF",
+    "Stacking_Boosting",
+    "Stacking_RF_XGB",
+    "Voting_Boosting",
+    "Voting_Heterogeneous",
+    "Voting_RF_CatBoost",
+    "Voting_RF_ExtraTrees",
     "XGBoost",
     "ranger"
   ],
-  "rows": 3800,
-  "successes": 3800,
+  "rows": 5890,
+  "successes": 5890,
   "failures": [],
   "paired_old_rows": 480,
+  "multi_metric_report": {
+    "rows": 8835,
+    "pair_rows": 4845,
+    "metrics": 15,
+    "ensembles": 6
+  },
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
   "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43"
 }
