@@ -344,3 +344,76 @@ The result aggregator refuses to certify or publish results
 unless *all* 5,890 model executions succeeded, including every
 new voting and stacking ensemble and all ranger fits. The complete
 error history remains in CI logs for any failed execution.
+
+## Final v0.6 measured disposition: 13 November 2026
+
+The completed benchmark reused the pinned vampire simulator and evaluated
+31 model types across 19 scenarios and 10 independent seeds. Exactly
+5,890/5,890 executions succeeded. All three OS-specific R CMD checks
+passed. The complete measured data are published under
+benchmark/results and retained as the version 0.6 reproducibility
+artifact. The original aggregation workflow completed all five
+benchmark groups successfully but lacked SciPy in its separate
+aggregation job. A dedicated publication workflow downloaded the
+original five group archives, installed SciPy, verified every model
+success and published the final reports. No new independent
+simulation was substituted for the failed aggregation step.
+
+The strongest mean primary-metric ranks over the 19 scenario
+families were Voting_Heterogeneous at 4.1053, followed by
+NeuralForest_Calibrated at 7.7895 and
+NeuralForest_Adaptive at 7.8421. Voting_Heterogeneous has
+seven sole first-place primary ranks; NeuralForest_Adaptive
+has one sole first-place rank (rare_1pct), tied with
+NeuralForest_Calibrated by score. A separate informed
+half-subsampled NeuralForest led the presence_bg_1to1
+scenario and the standalone differentiable NeuralForest led
+presence_bg_1to5. These are rankings from selected metrics
+that vary by scenario, not proof of a best model in general.
+
+The evaluation also records fifteen diagnostic metrics plus
+accuracy without changing the tuning target on the test set.
+Voting_Heterogeneous achieved the best cross-scenario average
+rank for ROC AUC, average precision, balanced accuracy, MCC,
+precision, specificity, Brier, logloss and top-decile retrieval.
+Voting_RF_CatBoost performed best on F1 by average rank,
+GradientBoosting on recall, while NeuralForest_Calibrated
+led the two Boyce rank summaries. All metrics and per-scenario
+winners are in METRICS_REPORT.md and all_metric_ranks.csv.
+
+A rare-positive advantage remains conditional. At 1% positive
+prevalence NeuralForest_Adaptive achieved AP 0.1834 versus
+Voting_Heterogeneous 0.1780 and Logistic 0.1732; however its
+fixed-threshold F1 was only 0.0398 versus 0.0522 (voting)
+and 0.0887 (logistic). This demonstrates that ranking and
+decision threshold are separate optimization problems.
+The matched eight-seed AP improvement over v0.5 was +0.0104,
+but variability was large (standard deviation ~0.0195).
+At 3% positive prevalence the adaptive model's AP was
+0.2722 versus Voting_Heterogeneous 0.2900.
+At 10% prevalence it was 0.5017 versus 0.5209.
+At 15% missingness, Stacking_Boosting reached AUC 0.7800,
+NeuralForest_Adaptive 0.7733.
+
+Mean end-to-end wall-clock time across these short simulator
+scenarios was 0.6761 seconds for NeuralForest_Adaptive
+(selection 0.480, final refit 0.178, prediction 0.016),
+0.9801 for Voting_Heterogeneous,
+1.0845 for plain RandomForest, 1.8338 for
+Stacking_Boosting and 2.2633 for Stacking_RF_XGB.
+Search spaces, implementation languages, candidate counts
+and runner hardware are not compute-matched, so absolute
+time differences are descriptive only.
+
+NeuralForest remains substantially behind Logistic regression
+on pseudoabsence_hard Boyce: 0.7211 versus 0.9898. The
+opposite direction of the internal pseudo-label and
+independent true-label objectives remains a fundamental
+scientific limitation, not a software defect that can
+be eliminated with another search. Secondary metric
+rankings, t intervals and individual seeds have been
+inspected repeatedly during these development cycles;
+future confirmatory claims require truly unused data,
+and comparisons should adjust for repeated testing.
+Neither a finite synthetic benchmark nor a passing software
+test proves the absence of errors or universal dominance.
