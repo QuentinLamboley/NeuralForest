@@ -17,6 +17,8 @@ SEEDS=(17,43,71,97,131,197,251,347,401,503)
 NEW_SEEDS=(401,503)
 SCENARIOS=19
 MODELS=31
+PU_MODELS=("NeuralForest_PUNeural","NeuralForest_PUInformed")
+PU_SCENARIOS=("presence_bg_1to1","presence_bg_1to5","pseudoabsence_hard")
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce",
          "boyce_rank","ece","precision_at_10pct","recall_at_10pct")
@@ -31,7 +33,7 @@ def summarize():
     if not paths: raise RuntimeError("No trial CSV files")
     data=pd.concat([pd.read_csv(p) for p in paths],ignore_index=True)
     # Each (scenario, seed, model) is unique. Missing fits remain explicit.
-    expected=SCENARIOS*len(SEEDS)*MODELS
+    expected=SCENARIOS*len(SEEDS)*MODELS+len(PU_SCENARIOS)*len(SEEDS)*len(PU_MODELS)
     if len(data)!=expected: raise RuntimeError(
         f"Expected {expected} score rows but found {len(data)}")
     if data[["scenario","seed","model"]].duplicated().any():
@@ -42,6 +44,18 @@ def summarize():
         raise RuntimeError(
             f"{len(failed)} of {expected} models failed; refusing to "
             f"publish an incomplete benchmark:\n{detail.to_string(index=False)}")
+    # The two specialized PU methods apply only to presence/background.
+    for scenario,group in data.groupby("scenario"):
+        expected_models=MODELS+(len(PU_MODELS) if scenario in PU_SCENARIOS else 0)
+        if group.model.nunique()!=expected_models or len(group)!=len(SEEDS)*expected_models:
+            raise RuntimeError(f"Incomplete model coverage for {scenario}")
+        if scenario in PU_SCENARIOS and not set(PU_MODELS).issubset(group.model):
+            raise RuntimeError(f"Missing a native PU variant for {scenario}")
+    external_cols=["external_"+metric for metric in METRICS]
+    if any(col not in data for col in external_cols):
+        raise RuntimeError("Independent shifted-cohort metrics are missing")
+    if data.external_roc_auc.isna().any() or data.external_pr_auc.isna().any():
+        raise RuntimeError("Independent cohort is missing AUC or average precision")
     pair=data[["scenario","seed"]].drop_duplicates()
     if len(pair)!=SCENARIOS*len(SEEDS) or set(data.seed)!=set(SEEDS):
         raise RuntimeError("Missing or duplicate scenario seeds")
@@ -54,7 +68,11 @@ def summarize():
         valid=v[np.isfinite(v)]
         fresh=scores_for(g[g.seed.isin(NEW_SEEDS)],metric)
         fresh=fresh[np.isfinite(fresh)]
+        extkey="external_"+("roc_auc" if metric=="auc" else metric)
+        external_primary=g[extkey]
         row=dict(scenario=scenario,model=model,primary_metric=metric,
+           external_primary_mean=external_primary.mean(),
+           external_primary_sd=external_primary.std(ddof=1),
            primary_mean=valid.mean() if len(valid) else np.nan,
            primary_sd=valid.std(ddof=1) if len(valid)>1 else np.nan,
            new_seed_primary_mean=fresh.mean() if len(fresh) else np.nan,
@@ -68,18 +86,31 @@ def summarize():
         for m in METRICS:
             row[m+"_mean"]=g[m].mean()
             row[m+"_sd"]=g[m].std()
+            row["external_"+m+"_mean"]=g["external_"+m].mean()
+            row["external_"+m+"_sd"]=g["external_"+m].std()
         summary.append(row)
     sm=pd.DataFrame(summary)
     sm["rank"]=np.nan
     sm["new_seed_rank"]=np.nan
+    sm["external_rank"]=np.nan
     for scenario,g in sm.groupby("scenario"):
         increasing=g.primary_metric.iloc[0] in MINIMIZE
         sm.loc[g.index,"rank"]=g.primary_mean.rank(
             method="min",ascending=increasing,na_option="bottom")
         sm.loc[g.index,"new_seed_rank"]=g.new_seed_primary_mean.rank(
             method="min",ascending=increasing,na_option="bottom")
+        sm.loc[g.index,"external_rank"]=g.external_primary_mean.rank(
+            method="min",ascending=increasing,na_option="bottom")
     sm=sm.sort_values(["scenario","rank","model"])
     sm.to_csv(RESULTS/"summary.csv",index=False)
+    # External shift cohort uses independent seeds and different proximity;
+    # it never informs the hyperparameter or ensemble-weight selection.
+    extfields=["scenario","model","primary_metric","primary_mean",
+       "primary_sd","external_primary_mean","external_primary_sd",
+       "external_rank","mean_selection_seconds","mean_final_fit_seconds",
+       "mean_predict_seconds","mean_total_seconds"]
+    sm[extfields].sort_values(["scenario","external_rank","model"]).to_csv(
+       RESULTS/"external_validation.csv",index=False)
     multi_manifest=build_reports(data,sm,RESULTS)
     # Keep classical/undersampled forest baselines side by side.
     forest_models=[
@@ -111,6 +142,7 @@ def summarize():
     comparisons.to_csv(RESULTS/"sampling_comparison.csv",index=False)
     # Generated from the same score table, never a manually copied timing report.
     t=sm.groupby("model",as_index=False).agg(
+        scenarios=("scenario","nunique"),
         selection=("mean_selection_seconds","mean"),
         final_fit=("mean_final_fit_seconds","mean"),
         prediction=("mean_predict_seconds","mean"),
@@ -124,10 +156,10 @@ def summarize():
         "may have distinct performance. Times do not include data generation",
         "or dependency installation. Internal search budgets differ by estimator.",
         "",
-        "| Algorithm | Selection (s) | Final fit (s) | Prediction (s) | Total (s) |",
-        "| --- | ---: | ---: | ---: | ---: |"]
+        "| Algorithm | Scenarios | Selection (s) | Final fit (s) | Prediction both cohorts (s) | Total (s) |",
+        "| --- | ---: | ---: | ---: | ---: | ---: |"]
     for item in t.itertuples():
-        timing.append(f"| {item.model} | {fmt(item.selection)} | "
+        timing.append(f"| {item.model} | {item.scenarios} | {fmt(item.selection)} | "
           f"{fmt(item.final_fit)} | {fmt(item.prediction,4)} | {fmt(item.total)} |")
     timing.extend(["",
       "## Comparisons by scenario",
@@ -138,8 +170,12 @@ def summarize():
       "primary objective gap and the total-time ratio versus RandomForest",
       "are stored. Positive primary_advantage_vs_classic_rf is favorable.",
       "",
-      "All 5,890 per-seed score and timing records appear in all_runs.csv;",
+      "All 5,950 per-seed score and timing records appear in all_runs.csv;",
       "the cross-seed means and standard deviations are in summary.csv.",
+      "Prediction time covers BOTH independent true-label test cohorts.",
+      "PU methods are evaluated on three presence/background scenarios",
+      "only. Their mean times are not directly comparable with the",
+      "19-scenario averages of other methods.",
       "The training budget and the initial predictive objective are",
       "not perfectly matched across algorithm families."])
     (RESULTS/"COMPUTE_TIME.md").write_text("\n".join(timing)+"\n",encoding="utf8")
@@ -181,6 +217,11 @@ def summarize():
             "scenario","seed","model","error"]].fillna("").to_dict("records"),
         paired_old_rows=0 if compared is None else len(compared),
         multi_metric_report=multi_manifest,
+        external_evaluation=dict(type="synthetic shifted generator",
+            source="independent same simulator, not real external data",
+            external_seed_offset=300003,
+            selected_using_external_labels=False,
+            metrics=external_cols),
         python_version=sys.version,platform=platform.platform())
     (RESULTS/"manifest.json").write_text(json.dumps(
         manifest,indent=2,ensure_ascii=False),encoding="utf8")
@@ -194,9 +235,13 @@ def summarize():
         "Prediction time includes evaluation inference on the held-out set.",
         "The three stages are also available independently in summary.csv.",
         "",
-        "The experiment covers 19 scenarios, ten seeds and 31 methods.",
+        "The experiment covers 19 scenarios, ten seeds and 31 standard methods",
+        "plus two PU-specific methods in three presence/background scenarios.",
         f"Successful runs: {manifest['successes']} / {len(data)}.",
-        "Seeds 401 and 503 are new confirmation seeds absent from earlier v0.5 runs.",
+        "Seeds 401 and 503 remain confirmation seeds from the v0.6 audit.",
+        "A second shifted simulator population is evaluated independently",
+        "without using any of its labels during fitting or model selection.",
+        "This is synthetic transfer validation, not real-world external validation.",
         "",
         "## Overall ranking for each scenario",
         "",
@@ -258,6 +303,8 @@ def summarize():
         "- paired_v041_comparison.csv: six matched seeds against NeuralForest v0.4.1",
         "- paired_v05_comparison.csv: eight matched seeds against v0.5",
         "- METRICS_REPORT.md: rankings across fifteen independent test metrics",
+        "- external_validation.csv: out-of-distribution shifted cohort scores",
+        "- EXTERNAL_VALIDATION.md: shifted-cohort method comparisons",
         "- all_metric_ranks.csv, metric_winners.csv: all metric rankings",
         "- ensemble_comparison.csv: voted and stacked ensemble comparison",
         "- paired_multi_metrics.csv: paired differences and 95% intervals",
@@ -267,6 +314,59 @@ def summarize():
         "- manifest.json: provenance, seeds, failures and environment",
         "- benchmark/README.md: full experimental protocol and limitations"
     ])
+    external_report=[
+        "# Independent shifted-cohort validation: synthetic transport",
+        "",
+        "Every fitted model also predicted a second **independent** cohort",
+        "from the same pinned synthetic generator with a prespecified",
+        "proximity change (usually 12 percentage points). Training,",
+        "threshold selection, prior assumptions and hyperparameter search",
+        "used neither this cohort nor its true labels. This is NOT",
+        "validation on an independently collected real-world dataset.",
+        "",
+        f"The main analysis includes {expected} successful fits and",
+        "records all 16 metrics on both independent test populations.",
+        "",
+        "| Scenario | Metric | Best shifted-cohort model | Shifted score | NeuralForest Adaptive |",
+        "| --- | --- | --- | ---: | ---: |"]
+    for scenario,g in sm.groupby("scenario"):
+        q=g[np.isfinite(g.external_primary_mean)].sort_values("external_rank")
+        top=q.iloc[0]
+        adaptive=q[q.model=="NeuralForest_Adaptive"].iloc[0]
+        external_report.append(
+            f"| {scenario} | {top.primary_metric} | {top.model} | "
+            f"{fmt(top.external_primary_mean,4)} | "
+            f"{fmt(adaptive.external_primary_mean,4)} |")
+    external_report.extend(["",
+      "## Positive-unlabeled variants",
+      "",
+      "These methods are run only in the three presence/background",
+      "scenarios; they must not be credited with winning the 19-scenario",
+      "overall rank or compared by overall mean compute time.",
+      "",
+      "| Scenario | Model | Main test metric | Shifted-cohort metric | Mean total time (s) |",
+      "| --- | --- | ---: | ---: | ---: |"])
+    for scenario in PU_SCENARIOS:
+        g=sm[(sm.scenario==scenario)&sm.model.isin(
+            ["NeuralForest_PUNeural","NeuralForest_PUInformed",
+             "NeuralForest_Adaptive","Logistic","Voting_Heterogeneous"])]
+        for row in g.sort_values("model").itertuples():
+            external_report.append(
+              f"| {scenario} | {row.model} | {fmt(row.primary_mean,4)} | "
+              f"{fmt(row.external_primary_mean,4)} | "
+              f"{fmt(row.mean_total_seconds,3)} |")
+    external_report.extend(["",
+       "The native nnPU objective assumes representative observed-positive",
+       "and unlabeled distributions and prespecified class-prior values.",
+       "The hard-background selection intentionally violates the",
+       "representative-unlabeled assumption. An apparent improvement on",
+       "this simulated population does not validate those assumptions.",
+       "Repeated inspection of these 19 scenario families has also",
+       "reduced their value as confirmatory external evidence.",
+       "",
+       "Source measurements: all_runs.csv and external_validation.csv."])
+    (RESULTS/"EXTERNAL_VALIDATION.md").write_text(
+         "\n".join(external_report)+"\n",encoding="utf8")
     (RESULTS/"RESULTS.md").write_text("\n".join(lines)+"\n",encoding="utf8")
     print("\n".join(lines),flush=True)
 if __name__=="__main__":

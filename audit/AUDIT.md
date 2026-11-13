@@ -417,3 +417,64 @@ future confirmatory claims require truly unused data,
 and comparisons should adjust for repeated testing.
 Neither a finite synthetic benchmark nor a passing software
 test proves the absence of errors or universal dominance.
+
+## Version 0.7: native nnPU uncertainty and transport test
+
+The major remaining domain mismatch is that observed
+presences are verified positives whereas background
+cases are NOT verified negatives. Optimizing a standard
+positive-versus-pseudo-negative holdout score can
+prefer an incorrect model even when an independent
+true-label evaluation suggests another choice.
+
+The new C++17 module `src/pu.cpp` implements a
+one-hidden-layer tanh MLP trained with Adam on the
+non-negative positive-unlabeled risk estimator
+(Kiryo et al., 2017; NeurIPS). It contains native
+forward and backward differentiation and an
+independent training-only early stopping partition.
+Three prespecified positive-class-prior assumptions
+(.12, .25, .40) represent sensitivity, not
+post-hoc choices from the test set.
+
+Two PU-specific variants separate (1) a standalone
+native PU neural ensemble from (2) a native random
+forest whose bootstrap draw weights discount
+unlabeled cases with high PU-positive scores.
+An outer PU-labeled holdout chooses a fixed
+neural/forest blending coefficient through a
+worst-case sensitivity risk, without seeing
+independent true labels. This is NOT a universally
+valid correction: representative positive and
+unlabeled sampling are needed, whereas
+`pseudoabsence_hard` deliberately violates
+representative background sampling. The class
+prior is not identifiable from arbitrary P/U
+data without further assumptions.
+
+Version 0.7 preserves the original 31 methods,
+19 scenarios, ten seeds and 15 detailed
+diagnostic metrics. It adds two PU-specific
+methods only to the 3 presence scenarios,
+for 5,950 total model fits when all succeed.
+Its second independent synthetic test cohort
+changes the class-feature distribution by a
+prespecified similarity shift, and its true
+labels are never used in fitting or tuning.
+
+This is a **simulation-based transfer test**,
+not external field/clinical/ecological validation.
+The simulator and scenario designs have been
+repeatedly inspected during method development;
+their use as confirmatory evidence is limited.
+Real data and genuinely fresh datasets are needed
+before clinical or ecological deployment, and
+we cannot promise universal best-in-class
+performance or that there are zero defects.
+
+Methods basis: Kiryo R, Niu G, du Plessis MC,
+Sugiyama M. Positive-Unlabeled Learning with
+Non-Negative Risk Estimator. NeurIPS 2017;
+and Bekker J, Davis J. Learning from positive
+and unlabeled data: a survey. Machine Learning
+2020.

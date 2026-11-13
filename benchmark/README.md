@@ -217,3 +217,55 @@ their *own* 15% early-stopping partition taken from the inner
 training set. The outer model-selection holdout is never given
 to the soft optimization routine. It also fixes overlapping
 reported calibration/soft-trees timing accounting.
+
+## Version 0.7: nnPU C++ experiments and second independent cohort
+
+The full baseline protocol preserves all 31 reference methods,
+19 scenarios and 10 existing seeds. Two **specialized** variants
+are added ONLY for `presence_bg_1to1`, `presence_bg_1to5`
+and `pseudoabsence_hard`, resulting in 5,950 planned
+fits rather than 5,890. Their overall ranks and times
+are never pooled with models run over 19 scenarios.
+
+The native `src/pu.cpp` one-hidden-layer tanh network
+minimizes the non-negative PU logistic risk
+`pi E_pos logloss_positive + max(0, E_unlab logloss_negative -
+pi E_pos logloss_negative)`. It computes all forward
+and backward passes and Adam updates in C++.
+PU priors 0.12/0.25/0.40 are prespecified sensitivity
+scenarios; they are not estimated from true labels in
+the independent evaluation populations. Inner neural
+early stopping uses a training-only holdout, and the
+outer holdout selects an optional forest/PU mixture
+under a worst-case nnPU risk. The forest's bootstrap
+sampling downweights uncertain unlabeled negatives,
+rather than treating every background point as
+fully verified negative.
+
+**Identification caveat:** the PU risk assumes a
+representative unlabeled sample and representative
+observed positives. Hard background intentionally
+selected near presences may violate the former and
+the original 0.28 generator prevalence is NOT
+assumed known to the learner. The original presence
+cases are synthetic, not verified ecological data.
+
+In addition to the original simulated independent
+test population, all methods predict another
+independently generated **shifted synthetic**
+population, varying the similarity parameter by
+12 points relative to the original test population.
+This is a prespecified transfer test, not a collected
+real-world dataset. No external outcomes influence
+training, hyperparameter selection, or the selection
+of PU priors. The corresponding metrics are stored
+under `external_*` in `all_runs.csv` and averaged
+in `external_validation.csv`. All prediction times
+in the v0.7 benchmark include both populations,
+so direct timing comparison with v0.6 requires
+accounting for the additional inference burden.
+
+`audit/baseline-v06-all_runs.csv` freezes the original
+v0.6 5,890 fits. `audit/pair_v06.py` compares exactly
+5,890 matched scenario/seed/model outcomes, excluding
+the 60 new native PU experiments.

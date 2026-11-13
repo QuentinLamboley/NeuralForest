@@ -21,3 +21,17 @@ nf_soft_predict <- function(model,X) {
 nf_soft_gradient_check <- function() {
   .Call("_NeuralForest_nf_soft_gradient_check",PACKAGE="NeuralForest")
 }
+
+# Native positive-unlabeled risk learner.
+nf_pu_cpp_fit <- function(X,y,Xvalid,yvalid,prior,hidden,epochs,
+                          learning_rate,weight_decay,seed) {
+  .Call("_NeuralForest_nf_pu_cpp_fit",PACKAGE="NeuralForest",
+    X,y,Xvalid,yvalid,prior,as.integer(hidden),as.integer(epochs),
+    learning_rate,weight_decay,as.integer(seed))
+}
+nf_pu_cpp_predict <- function(model,X) {
+  .Call("_NeuralForest_nf_pu_cpp_predict",PACKAGE="NeuralForest",model,X)
+}
+nf_pu_cpp_risk <- function(model,X,y,prior) {
+  .Call("_NeuralForest_nf_pu_cpp_risk",PACKAGE="NeuralForest",model,X,y,prior)
+}

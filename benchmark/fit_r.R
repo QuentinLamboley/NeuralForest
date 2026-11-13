@@ -2,15 +2,17 @@
 suppressPackageStartupMessages(library(NeuralForest))
 suppressPackageStartupMessages(library(jsonlite))
 args <- commandArgs(trailingOnly=TRUE)
-if (length(args) != 5L) stop("Usage: fit_r.R train.csv test.csv output.json metric seed")
+if (length(args) != 6L) stop("Usage: fit_r.R train.csv test.csv output.json metric seed external.csv")
 train <- utils::read.csv(args[[1]],check.names=FALSE)
 test <- utils::read.csv(args[[2]],check.names=FALSE)
+external <- utils::read.csv(args[[6]],check.names=FALSE)
 out <- args[[3]]
 metric <- args[[4]]
 seed <- as.integer(args[[5]])
 set.seed(seed)
 xtr <- train[,names(train)!="Vampirisme",drop=FALSE]
 xte <- test[,names(test)!="Vampirisme",drop=FALSE]
+xext <- external[,names(external)!="Vampirisme",drop=FALSE]
 ytr <- factor(train$Vampirisme,levels=c(0,1))
 yte <- factor(test$Vampirisme,levels=c(0,1))
 results <- list()
@@ -39,6 +41,7 @@ run_nf <- function(label, differentiable, adaptive=FALSE,
   duration <- proc.time()[["elapsed"]]-t0
   t1 <- proc.time()[["elapsed"]]
   prediction <- predict(fit,xte,type="prob")[,"1"]
+  prediction_external <- predict(fit,xext,type="prob")[,"1"]
   p_duration <- proc.time()[["elapsed"]]-t1
   b <- if (!is.null(fit$soft_selection))
     fit$soft_selection$weight else 0
@@ -50,6 +53,7 @@ run_nf <- function(label, differentiable, adaptive=FALSE,
     fit$timings$soft_selection_seconds+
     fit$timings$expert_selection_seconds
   list(name=label,probability=as.numeric(prediction),
+       external_probability=as.numeric(prediction_external),
        train_seconds=duration,
        selection_seconds=select_seconds,
        final_fit_seconds=fit$timings$final_refit_seconds,
@@ -126,6 +130,7 @@ if(requireNamespace("ranger",quietly=TRUE)) {
   d <- full$training
   d$.target <- ytr
   ranger_test <- full$other
+  ranger_external <- ranger_impute(xtr,xext)$other
   opt <- options[[best_idx]]
   final <- ranger::ranger(.target ~ .,data=d,num.trees=160L,
               mtry=opt$mtry,min.node.size=opt$min.node.size,
@@ -134,8 +139,10 @@ if(requireNamespace("ranger",quietly=TRUE)) {
   duration <- proc.time()[["elapsed"]]-t0
   t1 <- proc.time()[["elapsed"]]
   prob <- predict(final,ranger_test)$predictions[,"1"]
+  probext <- predict(final,ranger_external)$predictions[,"1"]
   p_duration <- proc.time()[["elapsed"]]-t1
   results[[8]] <- list(name="ranger",probability=as.numeric(prob),
+     external_probability=as.numeric(probext),
      train_seconds=duration,selection_seconds=select_seconds,
      final_fit_seconds=fit_seconds,prediction_seconds=p_duration,
      validation_score=best,

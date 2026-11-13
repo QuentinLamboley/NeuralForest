@@ -1,3 +1,51 @@
+## NeuralForest 0.7: positive–unlabeled uncertainty, native C++ training
+
+Version 0.7 introduces two **experimental** methods for the
+positive/background problem: `NeuralForest_PUNeural` and
+`NeuralForest_PUInformed`. The neural component is a 1-hidden-layer
+tanh MLP written in C++17/Rcpp and optimized by full-batch Adam with
+the non-negative PU logistic risk. A grid of **prespecified**
+class-prior assumptions (.12, .25, .40) is averaged as a sensitivity
+ensemble; no true label from the independent tests is consulted.
+The informed forest discounts unlabeled examples assigned a large
+positive probability, while retaining confirmed positives. A
+**distinct outer PU validation partition** selects the neural/forest
+mix by worst-case nnPU risk over assumed priors.
+
+Usage for **confirmed positives and unlabeled/background**, not
+verified negatives:
+
+```r
+library(NeuralForest)
+model <- nf_pu_forest(x, y, mode="informed",
+                      priors=c(.12,.25,.40))
+prob <- predict(model,newdata,type="prob")
+```
+
+**Critical assumption:** PU estimators generally require representative
+observed positives, representative unlabeled sampling, and an
+appropriate prior. Environmentally chosen **hard pseudo-absences**
+violate the representativeness assumption. Good performance cannot
+be guaranteed under this violation. Avoid interpreting nnPU predictions
+as calibrated true-disease probabilities without external evidence.
+
+The original v0.6 comparison remains unchanged:
+31 methods × 19 cases × 10 seeds = 5,890 fits. The two native PU
+experiments are added **only** for the three presence/background
+cases (60 further fits), giving a planned 5,950 complete model fits.
+
+Every fitted model predicts both the original independent test
+population and an additional independent **shifted synthetic**
+population, with multiple classification/ranking/calibration metrics
+and selection/fitting/inference times. The latter is an external-style
+transport stress test, **not independent real-world validation**.
+
+See [the benchmark report](benchmark/results/RESULTS.md),
+[the transfer evaluation](benchmark/results/EXTERNAL_VALIDATION.md)
+and [the full audit](audit/AUDIT.md).
+
+---
+
 # NeuralForest
 
 **Neural-guided random forests for R** : a research-stage package with a native

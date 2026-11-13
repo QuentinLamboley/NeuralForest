@@ -136,3 +136,24 @@ def create_data(spec: Scenario, seed: int):
        train_positive=int(source["Vampirisme"].sum()),
        test_positive=int(test["Vampirisme"].sum()),
        label_semantics=target_status)
+
+def create_external_population(spec: Scenario, seed: int):
+    """A SECOND, independent and distribution-shifted simulator cohort.
+
+    This is a synthetic external-style transport test, NOT real-world
+    external validation. It is never seen by fitting, hyperparameter
+    selection, PU prior assumptions, or threshold selection.
+    """
+    base=spec.test_proximity if spec.test_proximity is not None else spec.proximity
+    shifted=min(100,base+12) if base<=88 else max(0,base-12)
+    params=parameters_with_proximity(initial_parameters(),shifted)
+    test=simulate_population(params,max(1000,min(2400,spec.n*2)),
+                             spec.prevalence,seed+300_003)
+    test=augment(test,spec.extension,seed+300_005)
+    if test["Vampirisme"].nunique()!=2:
+        raise RuntimeError("External cohort lacks binary classes")
+    return test,dict(source="independent shifted vampire simulator",
+                     original_test_proximity=base,
+                     external_proximity=shifted,
+                     external_seed=seed+300_003,
+                     population_type="synthetic external-like transport")

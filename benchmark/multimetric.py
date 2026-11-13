@@ -142,9 +142,15 @@ def build_reports(raw,summary,root):
     m=summary.groupby("model").agg(
         mean_primary_rank=("rank","mean"),
         first_primary=("rank",lambda x:int((x==1).sum())),
+        scenarios=("scenario","nunique"),
         mean_total_seconds=("mean_total_seconds","mean")).sort_values(
         ["mean_primary_rank","mean_total_seconds"])
     m.to_csv(root/"primary_rank_summary.csv")
+    presence_only=m[m.scenarios<19]
+    # Mean ranks across different scenario sets must never be mistaken
+    # for directly comparable overall rankings.
+    if not presence_only.empty:
+        presence_only.to_csv(root/"pu_specific_ranks.csv")
 
     lines=[
       "# Performance by metric: complete ensemble comparison","",
@@ -158,14 +164,19 @@ def build_reports(raw,summary,root):
       "## Metric-level comparisons",
       "",
       "The following values average **ranks**, not incompatible numeric",
-      "scores, across scenarios. Lower average rank is more favorable;",
+      "scores, across all 19 scenarios. PU-specific methods are excluded",
+      "from overall mean-rank comparisons because they run on only three",
+      "presence/background scenarios. Lower average rank is favorable;",
       "first-place counts are descriptive. These are not significance",
       "tests and do not establish universal algorithm dominance.",
       "",
       "| Metric | Best mean-rank method | Average rank |",
       "| --- | --- | ---: |"]
     for measure in METRICS:
-        view=ranks_by_model[ranks_by_model.metric==measure].sort_values(
+        # PU-specific methods have only three applicable scenarios; do not
+        # compare their three-case rank to a 19-case full-domain mean rank.
+        view=ranks_by_model[(ranks_by_model.metric==measure)&
+          (ranks_by_model.scenarios==19)].sort_values(
             ["mean_rank","model"])
         first=view.iloc[0]
         lines.append(f"| {measure} | {first.model} | {fmt(first.mean_rank,2)} |")
@@ -215,6 +226,9 @@ def build_reports(raw,summary,root):
       "Optimizing a Boyce value on pseudo-labels can disagree with",
       "the independent true-label target. No model is guaranteed to",
       "be optimal for every possible data-generating distribution.",
+      "",
+      "Presence-only nnPU sensitivity results are separately summarized",
+      "in EXTERNAL_VALIDATION.md and pu_specific_ranks.csv.",
       "",
       "Files: all_metric_ranks.csv, metric_winners.csv,",
       "ensemble_comparison.csv, paired_multi_metrics.csv,",

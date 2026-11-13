@@ -35,7 +35,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.svm import SVC
 
-from design import SCENARIOS, create_data
+from design import SCENARIOS, create_data, create_external_population
 from balanced_prior import BalancedPriorCorrectedRF
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -268,7 +268,7 @@ def estimator_with_preprocessing(estimator):
         return estimator
     return make_pipeline(SimpleImputer(strategy="median"),estimator)
 
-def evaluate_sklearn(candidates,Xtr,ytr,Xte,yte,selection_metric,seed):
+def evaluate_sklearn(candidates,Xtr,ytr,Xte,yte,Xexternal,selection_metric,seed):
     xa,xb,ya,yb=train_test_split(
         Xtr,ytr,test_size=0.2,stratify=ytr,random_state=seed+57)
     output=[]
@@ -297,38 +297,52 @@ def evaluate_sklearn(candidates,Xtr,ytr,Xte,yte,selection_metric,seed):
         train_time=selection_time+fit_time
         t1=time.perf_counter()
         p=model.predict_proba(Xte)[:,list(model.classes_).index(1)]
+        pexternal=model.predict_proba(Xexternal)[:,list(model.classes_).index(1)]
         pred_time=time.perf_counter()-t1
         output.append((name,p,float(train_time),float(pred_time),
                        float(best_s),f"trial={best_i+1}/{len(options)}",
-                       float(selection_time),float(fit_time)))
+                       float(selection_time),float(fit_time),pexternal))
     return output
 
-def evaluate_R(train,test,metric,seed,root):
+def evaluate_R(train,test,external,metric,seed,root,script="fit_r.R"):
     with tempfile.TemporaryDirectory() as td:
         path=Path(td)
         train.to_csv(path/"train.csv",index=False)
         test.to_csv(path/"test.csv",index=False)
-        subprocess.run(["Rscript",str(root/"benchmark"/"fit_r.R"),
+        external.to_csv(path/"external.csv",index=False)
+        subprocess.run(["Rscript",str(root/"benchmark"/script),
                         str(path/"train.csv"),str(path/"test.csv"),
-                        str(path/"output.json"),metric,str(seed)],check=True,
+                        str(path/"output.json"),metric,str(seed),
+                        str(path/"external.csv")],check=True,
                         cwd=root,stdout=subprocess.DEVNULL)
         obj=json.loads((path/"output.json").read_text(encoding="utf8"))
         return obj["models"]
 
 def run_case(spec,seed,output):
     train,test,metadata=create_data(spec,seed)
+    external,external_metadata=create_external_population(spec,seed)
+    metadata["external_validation"]=external_metadata
     Xtr=train.drop(columns="Vampirisme")
     Xte=test.drop(columns="Vampirisme")
+    Xext=external.drop(columns="Vampirisme")
+    if list(Xext)!=list(Xte):
+        raise RuntimeError("External cohort predictors are misaligned")
     ytr=train["Vampirisme"].to_numpy(dtype=int)
     yte=test["Vampirisme"].to_numpy(dtype=int)
+    yext=external["Vampirisme"].to_numpy(dtype=int)
     dataset_id=f"{spec.key}_{seed}"
     rows=[]
     def add(name,p,trainsec,predsec,inner_score,config,
-            selectionsec=np.nan,finalfitsec=np.nan,status="ok",error=""):
+            selectionsec=np.nan,finalfitsec=np.nan,
+            external_probability=None,status="ok",error=""):
         if status=="ok":
+            if external_probability is None:
+                raise RuntimeError(f"Missing external predictions for {name}")
             metrics=metric_table(yte,p)
+            external_metrics=metric_table(yext,external_probability)
         else:
             metrics={m:np.nan for m in METRICS}
+            external_metrics={m:np.nan for m in METRICS}
         rows.append(dict(
             scenario=spec.key,seed=seed,model=name,
             selected_metric=spec.target_metric,
@@ -338,27 +352,30 @@ def run_case(spec,seed,output):
             prevalence=spec.prevalence,extension=spec.extension,
             target_semantics=metadata["label_semantics"],
             train_seconds=trainsec,predict_seconds=predsec,
+            external_n=len(external),external_positives=int(yext.sum()),
+            external_proximity=external_metadata["external_proximity"],
             selection_seconds=selectionsec,final_fit_seconds=finalfitsec,
             total_seconds=trainsec+predsec,
             validation_score=inner_score,configuration=config,
-            status=status,error=error,**metrics))
+            status=status,error=error,**metrics,
+            **{"external_"+m:v for m,v in external_metrics.items()}))
     try:
-        for name,p,tr,pt,inner,config,select,final in evaluate_sklearn(
-                model_candidates(seed),Xtr,ytr,Xte,yte,spec.target_metric,seed):
-            add(name,p,tr,pt,inner,config,select,final)
+        for name,p,tr,pt,inner,config,select,final,pext in evaluate_sklearn(
+                model_candidates(seed),Xtr,ytr,Xte,yte,Xext,spec.target_metric,seed):
+            add(name,p,tr,pt,inner,config,select,final,pext)
     except Exception:
         # Try every baseline independently so one dependency/estimator failure
         # cannot mask the other algorithms.
         for name,makers in model_candidates(seed).items():
             try:
-                for nm,p,tr,pt,inner,config,select,final in evaluate_sklearn(
-                        {name:makers},Xtr,ytr,Xte,yte,spec.target_metric,seed):
-                    add(nm,p,tr,pt,inner,config,select,final)
+                for nm,p,tr,pt,inner,config,select,final,pext in evaluate_sklearn(
+                        {name:makers},Xtr,ytr,Xte,yte,Xext,spec.target_metric,seed):
+                    add(nm,p,tr,pt,inner,config,select,final,pext)
             except Exception as exc:
                 add(name,None,np.nan,np.nan,np.nan,"",
                     status="error",error=f"{type(exc).__name__}: {exc}")
     try:
-        for run in evaluate_R(train,test,spec.target_metric,seed,ROOT):
+        for run in evaluate_R(train,test,external,spec.target_metric,seed,ROOT):
             p=np.asarray(run["probability"],dtype=float)
             if len(p)!=len(yte):
                 raise ValueError("R output and test sample lengths differ")
@@ -366,7 +383,8 @@ def run_case(spec,seed,output):
                 float(run["prediction_seconds"]),
                 float(run["validation_score"]),run.get("configuration",""),
                 float(run.get("selection_seconds",np.nan)),
-                float(run.get("final_fit_seconds",np.nan)))
+                float(run.get("final_fit_seconds",np.nan)),
+                np.asarray(run["external_probability"],dtype=float))
     except Exception as exc:
         message=f"{type(exc).__name__}: {exc}"
         for model in ("ranger","NeuralForest_CART","NeuralForest_Differentiable",
@@ -375,6 +393,25 @@ def run_case(spec,seed,output):
                       "NeuralForest_UndersampledPlain",
                       "NeuralForest_UndersampledInformed"):
             add(model,None,np.nan,np.nan,np.nan,"",status="error",error=message)
+    if spec.extension in ("bg1","bg5","hard"):
+        try:
+            for run in evaluate_R(train,test,external,
+                                  spec.target_metric,seed,ROOT,
+                                  script="fit_pu_r.R"):
+                p=np.asarray(run["probability"],dtype=float)
+                pext=np.asarray(run["external_probability"],dtype=float)
+                if len(p)!=len(yte) or len(pext)!=len(yext):
+                    raise ValueError("PU outputs differ from test cohort sizes")
+                add(run["name"],p,float(run["train_seconds"]),
+                    float(run["prediction_seconds"]),
+                    float(run["validation_score"]),run["configuration"],
+                    float(run["selection_seconds"]),
+                    float(run["final_fit_seconds"]),pext)
+        except Exception as exc:
+            for method in ("NeuralForest_PUNeural",
+                           "NeuralForest_PUInformed"):
+                add(method,None,np.nan,np.nan,np.nan,"",
+                    status="error",error=f"{type(exc).__name__}: {exc}")
     output.mkdir(parents=True,exist_ok=True)
     pd.DataFrame(rows).to_csv(output/f"{dataset_id}.csv",index=False)
     (output/f"{dataset_id}_design.json").write_text(

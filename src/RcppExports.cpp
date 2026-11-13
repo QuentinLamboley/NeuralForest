@@ -46,7 +46,36 @@ RcppExport SEXP _NeuralForest_nf_soft_gradient_check() {
   return wrap(nf_soft_gradient_check());
   END_RCPP
 }
+// Native PU network and non-negative risk (Rcpp exports).
+List nf_pu_cpp_fit(NumericMatrix,NumericVector,NumericMatrix,NumericVector,
+                   double,int,int,double,double,int);
+NumericVector nf_pu_cpp_predict(List,NumericMatrix);
+double nf_pu_cpp_risk(List,NumericMatrix,NumericVector,double);
+RcppExport SEXP _NeuralForest_nf_pu_cpp_fit(SEXP X,SEXP y,SEXP Xv,SEXP yv,
+    SEXP prior,SEXP hidden,SEXP epochs,SEXP lr,SEXP wd,SEXP seed) {
+  BEGIN_RCPP
+  return wrap(nf_pu_cpp_fit(as<NumericMatrix>(X),as<NumericVector>(y),
+      as<NumericMatrix>(Xv),as<NumericVector>(yv),as<double>(prior),
+      as<int>(hidden),as<int>(epochs),as<double>(lr),as<double>(wd),
+      as<int>(seed)));
+  END_RCPP
+}
+RcppExport SEXP _NeuralForest_nf_pu_cpp_predict(SEXP model,SEXP X) {
+  BEGIN_RCPP
+  return wrap(nf_pu_cpp_predict(as<List>(model),as<NumericMatrix>(X)));
+  END_RCPP
+}
+RcppExport SEXP _NeuralForest_nf_pu_cpp_risk(SEXP model,SEXP X,
+                                            SEXP y,SEXP prior) {
+  BEGIN_RCPP
+  return wrap(nf_pu_cpp_risk(as<List>(model),as<NumericMatrix>(X),
+      as<NumericVector>(y),as<double>(prior)));
+  END_RCPP
+}
 static const R_CallMethodDef CallEntries[] = {
+  {"_NeuralForest_nf_pu_cpp_fit", (DL_FUNC) &_NeuralForest_nf_pu_cpp_fit, 10},
+  {"_NeuralForest_nf_pu_cpp_predict", (DL_FUNC) &_NeuralForest_nf_pu_cpp_predict, 2},
+  {"_NeuralForest_nf_pu_cpp_risk", (DL_FUNC) &_NeuralForest_nf_pu_cpp_risk, 4},
   {"_NeuralForest_nf_soft_fit", (DL_FUNC) &_NeuralForest_nf_soft_fit, 7},
   {"_NeuralForest_nf_soft_predict", (DL_FUNC) &_NeuralForest_nf_soft_predict, 2},
   {"_NeuralForest_nf_soft_gradient_check", (DL_FUNC) &_NeuralForest_nf_soft_gradient_check, 0},

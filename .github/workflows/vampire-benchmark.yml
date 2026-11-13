@@ -87,6 +87,7 @@ jobs:
           python audit/pair_v03.py
           python audit/pair_v041.py
           python audit/pair_v05.py
+          python audit/pair_v06.py
       - uses: actions/upload-artifact@v4
         with:
           name: vampire-benchmark-results
