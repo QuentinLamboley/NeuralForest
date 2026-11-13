@@ -250,3 +250,32 @@ same-compute causal comparison. The paired informed-versus-plain
 balanced comparison is the most controlled estimate of network
 guidance, but would still benefit from many more seeds and real
 datasets.
+
+## Important failure on a new presence-background seed
+
+The independent seed 251 of the pseudoabsence_hard experiment reveals
+a clear failure that the six-seed averages concealed. The adaptive
+NeuralForest selects a native forest using an inner holdout Boyce
+score of 0.90436, but the independent true-label test scores are
+Boyce -0.25112 and AUC 0.48903. The selected soft-tree weight is
+zero, as is the selected linear-expert weight. A standard Logistic
+regression on exactly the same simulated data scores test Boyce
+0.98968 and AUC 0.71145, despite an inner pseudo-label Boyce
+of only 0.27373.
+
+This is evidence of an objective-domain mismatch. The inner
+validation treats sampled background as negatives, although it
+contains unknown positives. The external synthetic test is
+evaluated against verified original simulator labels, so the
+internal selection metric is not estimating the same target.
+No tree architecture or parameter search can guarantee that the
+pseudo-label validation optimum generalizes to the true labels.
+A future genuine positive-unlabelled analysis would need
+specified prevalence assumptions, independent presence-only
+evaluation or verified negatives, and sensitivity analysis.
+The unfavourable result is retained in all_runs.csv. It must not
+be fixed post hoc by selecting parameters from the test set.
+
+The eight-seed mean of Boyce for the adaptive forest on this
+scenario is 0.67309, versus 0.98887 for Logistic regression;
+the extreme negative seed contributes to that reduction.
