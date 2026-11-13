@@ -9,12 +9,13 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'DESCRIPTION'
+      - '.github/workflows/vampire-benchmark.yml'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
   group: vampire-benchmark
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   benchmark:
     strategy:
