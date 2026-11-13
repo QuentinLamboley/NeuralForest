@@ -484,7 +484,6 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
     fw <- pmax(1e-8,fw)
   }
   native_seconds <- now()-native_start
-  soft_start <- now()
   soft_model <- NULL
   soft_selection <- NULL
   original_validation_score <- best_score
@@ -502,9 +501,17 @@ neural_forest <- function(x, y, task="auto", control=nf_control(),
     }
   }
   calibration_seconds <- now()-calibration_start
+  soft_start <- now()
   if (isTRUE(ctrl$differentiable)) {
-    soft_model <- nf_soft_train(Xtr,ytr,Xval,yval,task,K,ctrl,metric,
-                                seed=seed+1919L)
+    # The outer holdout selects blend weights and experts. It cannot also
+    # train/early-stop soft trees: that would reuse validation labels twice.
+    # A distinct inner partition drawn *only* from training observations
+    # provides gradient-training early stopping, including for rare cases.
+    inner_soft <- nf_split_indices(ytr,task,0.15,seed+70313L)
+    soft_model <- nf_soft_train(
+      Xtr[inner_soft$train,,drop=FALSE],ytr[inner_soft$train],
+      Xtr[inner_soft$validation,,drop=FALSE],ytr[inner_soft$validation],
+      task,K,ctrl,metric,seed=seed+1919L)
     soft_val <- nf_soft_probabilities(soft_model,Xval)
     soft_selection <- nf_soft_select_blend(
       hard_val,soft_val,yval,metric,task,resp$labels,ctrl)

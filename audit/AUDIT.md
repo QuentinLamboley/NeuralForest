@@ -279,3 +279,51 @@ be fixed post hoc by selecting parameters from the test set.
 The eight-seed mean of Boyce for the adaptive forest on this
 scenario is 0.67309, versus 0.98887 for Logistic regression;
 the extreme negative seed contributes to that reduction.
+
+## Version 0.6: independent early-stopping and ensemble comparator audit
+
+Earlier gradient-trained soft trees consumed the outer model-selection
+validation labels for early stopping and then reused those labels to
+choose their mixture weight and expert combination. This entangles
+early stopping and outer selection, increasing winner's-curse bias.
+Version 0.6 holds out a separate stratified 15% subset from
+the internal training fold exclusively for soft-tree early stopping.
+Only the remainder of the internal training partition trains
+differentiable splits. The original outer validation remains reserved
+for model selection. A regression test changes only outer validation
+labels and checks identical learned soft-tree probabilities.
+
+Previous timing accounting added calibration_selection_seconds
+to soft_selection_seconds, but the soft stopwatch was started before
+the calibration stage. Moving the soft timer after calibration
+eliminates this double counting. Per-stage costs still exclude
+data generation and dependency/environment installation.
+
+Six independent scikit-learn ensemble baselines are included:
+four soft-voting models combining random forests, extra trees,
+boosting and/or regularized logistic regression, and two
+three-fold out-of-fold stacking models. Each stacking base
+estimator performs its own missing-data imputation inside
+the fold rather than on all of the meta-training observations.
+The evaluation protocol makes no claim of equal hyperparameter
+budgets, and stacking entails intrinsically higher training cost.
+
+A ten-seed, 31-method, 19-scenario experiment is designed to produce
+5,890 runs. Eight seeds match v0.5 exactly and two are additional
+confirmation seeds. The v0.5 3,800-run raw file is frozen for
+a matched before/after comparison. Every method is scored
+on 15 reported metrics (AUC, AP, F1, MCC, balanced accuracy,
+precision, recall, specificity, accuracy, Brier, logloss,
+standard equal-width Boyce, rank-based Boyce, ECE, precision@10%,
+and recall@10%); accuracy makes sixteen total including the
+thresholded accuracy metric.
+
+Important limitations: training and selection on pseudo-absence
+labels still cannot guarantee performance against true outcomes.
+The soft-trees training subfold reduces effective fitting sample
+size and may decrease predictive scores. Rank-based Boyce is
+a new sensitivity diagnostic and must not be passed off as
+the continuous Boyce index used in ecological modelling.
+Statistical intervals from repeated seeds do not generalize
+automatically to independent scientific datasets, and
+multiple comparisons require caution.

@@ -8,6 +8,17 @@ perceptron (MLP). The MLP learns **which observations are difficult to predict**
 from out-of-bag (OOB) errors and adapts sampling probabilities for subsequent
 forests. Its learned input-layer saliencies also guide feature proposals.
 
+Version 0.6 separates soft-tree early stopping from model-selection holdouts
+and fixes a timing accounting error in calibration selection. The expanded
+reproducible benchmark compares 31 methods, including soft-voting and
+cross-validated stacking ensembles, across 19 scenario families, ten
+seeds and 15 independent-test metrics. Newly introduced ranking-based
+Boyce is provided only as a monotone-transform sensitivity diagnostic,
+not a replacement for the ecological continuous Boyce index. See
+[benchmark/results/METRICS_REPORT.md](benchmark/results/METRICS_REPORT.md).
+Genuine universal algorithm dominance cannot be established on finite
+benchmark samples.
+
 Version 0.5 adds genuine class-balanced under-sampling without replacement,
 per-tree class-draw diagnostics, and a single sigmoid soft-tree model for
 binary classification rather than two redundant one-vs-rest models.
@@ -291,3 +302,28 @@ Brier and log loss as well as AUC, average precision and Boyce. The
 benchmarks also include unbalanced RandomForest, 50% and 80%
 subsampling without replacement, a partial-row bootstrap RF, and
 imbalanced-learn balanced forests with and without prior correction.
+
+## Why model-selection holdouts matter (v0.6)
+
+Previously the auxiliary soft trees used the same holdout both to
+early-stop their gradient updates and to choose their ensemble
+mixture with the native forest. Version 0.6 creates a disjoint
+training-only soft early-stopping split; the outer holdout
+is used strictly to select the round, soft mixture, calibration
+and expert. This removes one concrete source of optimistic
+validation selection. Tests verify that changing outer holdout
+labels cannot change trained soft-tree parameters.
+
+The main comparison reports 31 models, including classic and
+subsampled random forests plus independent soft-voting and
+three-fold stacking ensembles. Base learners inside stacking
+fit their missing-value imputers inside each cross-validation
+fold. Their fixed tuning budgets and computation are recorded.
+Model selection still uses each scenario's predefined target
+metric and never consults independent test labels.
+
+Analysis includes ROC AUC, average precision, class threshold
+scores, proper probability scores, expected calibration error,
+top-decile precision/recall, and both ordinary and rank-transformed
+Boyce. The separate metrics are diagnostics for the *same fitted
+models* and are not retrospectively used to tune them.

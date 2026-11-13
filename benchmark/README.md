@@ -175,3 +175,45 @@ Balanced under-sampling changes the class prevalence within
 each tree, and training-prior correction only holds under
 ordinary prior-shift assumptions. This does not solve
 presence/background label contamination or distribution shift.
+
+## Version 0.6 ensembles and multi-metric evaluation
+
+Six additional ensemble comparators are constructed explicitly:
+Voting_RF_ExtraTrees, Voting_RF_CatBoost, Voting_Boosting,
+Voting_Heterogeneous, Stacking_RF_XGB and Stacking_Boosting.
+Soft voting combines independent probability estimators;
+stacking trains a logistic meta-estimator using 3-fold
+out-of-fold predictions from its base learners. Within stacking,
+each estimator fits its median imputer on its own fold only.
+All ensemble weights and candidate choices are selected on
+a separate 20% training-only holdout, never on final test data.
+The time budget includes candidate selection, fit of the final
+ensemble and prediction.
+
+The expanded protocol has 31 methods, 19 scenario families and
+10 generator seeds, including new seeds 401 and 503.
+It expects 5,890 successful independent-test evaluations.
+Old v0.5 outcomes are archived as audit/baseline-v05-all_runs.csv,
+and 3,800 matched old-seed pairs are evaluated without changing
+the random seeds or the underlying simulator revision.
+
+Fifteen independent-test metrics are stored separately, with
+cross-scenario *rank* (not incomparable raw score) summaries.
+METRICS_REPORT.md and metric_winners.csv show who wins for each
+metric and scenario; ensemble_comparison.csv reports the ensemble
+family in direct comparison with ordinary forests and NeuralForest.
+paired_multi_metrics.csv includes ten-seed matched differences
+and exploratory 95% intervals; these are not multiplicity-adjusted.
+
+Two special caveats matter. Presence/background samples contain
+unknown positives, and using pseudo-label Boyce to select a model
+does not validate true-label generalization. A rank-transformed
+Boyce metric is included to expose instability under strictly
+monotone probability recalibration; it is a sensitivity diagnostic,
+not the canonical ecological Boyce statistic.
+
+Version 0.6 fits the gradient-trained auxiliary soft trees with
+their *own* 15% early-stopping partition taken from the inner
+training set. The outer model-selection holdout is never given
+to the soft optimization routine. It also fixes overlapping
+reported calibration/soft-trees timing accounting.

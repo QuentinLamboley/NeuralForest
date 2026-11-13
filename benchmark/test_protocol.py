@@ -54,7 +54,7 @@ class BenchmarkProtocolTests(unittest.TestCase):
             "RF_Subsample80","RF_BalancedUndersampled",
             "RF_BalancedUndersampledPrior"}
         self.assertTrue(expected.issubset(model_candidates(11)))
-        self.assertEqual(len(model_candidates(11)),17)
+        self.assertEqual(len(model_candidates(11)),23)
 
     def test_no_replacement_and_class_balance_are_genuine(self):
         rng=np.random.default_rng(12)
