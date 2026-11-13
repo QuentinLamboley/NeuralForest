@@ -1,0 +1,54 @@
+name: Publish audited NeuralForest v0.6 results
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-v06-results.yml'
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch all five completed benchmark groups
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43418579840
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          pattern: vampire-benchmark-*
+          path: benchmark/out/
+          merge-multiple: true
+      - name: Install exact aggregation dependencies
+        run: |
+          python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4" "scipy>=1.12,<2"
+      - name: Validate all evaluations and compute 15-metric comparison
+        run: |
+          python -m compileall -q benchmark audit
+          python benchmark/summarize.py
+          python audit/pair_v03.py
+          python audit/pair_v041.py
+          python audit/pair_v05.py
+      - name: Save all result files
+        uses: actions/upload-artifact@v4
+        with:
+          name: neuralforest-v06-final-results
+          path: benchmark/results/
+          if-no-files-found: error
+      - name: Publish reproducible results to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add benchmark/results/
+          if ! git diff --staged --quiet; then
+            git commit -m "Publish validated 5890-run NeuralForest v0.6 benchmark and ensemble metrics"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
