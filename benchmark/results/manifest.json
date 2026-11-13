@@ -7,11 +7,13 @@
     71,
     97,
     131,
-    197
+    197,
+    251,
+    347
   ],
   "new_confirmation_seeds": [
-    131,
-    197
+    251,
+    347
   ],
   "scenarios": [
     "correlated_30",
@@ -48,13 +50,21 @@
     "NeuralForest_CART",
     "NeuralForest_Calibrated",
     "NeuralForest_Differentiable",
+    "NeuralForest_SubSample50_Informed",
+    "NeuralForest_UndersampledInformed",
+    "NeuralForest_UndersampledPlain",
+    "RF_BalancedUndersampled",
+    "RF_BalancedUndersampledPrior",
+    "RF_Bootstrap50",
+    "RF_Subsample50",
+    "RF_Subsample80",
     "RandomForest",
     "SVM_RBF",
     "XGBoost",
     "ranger"
   ],
-  "rows": 1938,
-  "successes": 1938,
+  "rows": 3800,
+  "successes": 3800,
   "failures": [],
   "paired_old_rows": 480,
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
