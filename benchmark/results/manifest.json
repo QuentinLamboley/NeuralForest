@@ -52,6 +52,8 @@
     "NeuralForest_CART",
     "NeuralForest_Calibrated",
     "NeuralForest_Differentiable",
+    "NeuralForest_PUInformed",
+    "NeuralForest_PUNeural",
     "NeuralForest_SubSample50_Informed",
     "NeuralForest_UndersampledInformed",
     "NeuralForest_UndersampledPlain",
@@ -71,15 +73,39 @@
     "XGBoost",
     "ranger"
   ],
-  "rows": 5890,
-  "successes": 5890,
+  "rows": 5950,
+  "successes": 5950,
   "failures": [],
   "paired_old_rows": 480,
   "multi_metric_report": {
-    "rows": 8835,
+    "rows": 8925,
     "pair_rows": 4845,
     "metrics": 15,
     "ensembles": 6
+  },
+  "external_evaluation": {
+    "type": "synthetic shifted generator",
+    "source": "independent same simulator, not real external data",
+    "external_seed_offset": 300003,
+    "selected_using_external_labels": false,
+    "metrics": [
+      "external_roc_auc",
+      "external_pr_auc",
+      "external_accuracy",
+      "external_balanced_accuracy",
+      "external_precision",
+      "external_recall",
+      "external_specificity",
+      "external_f1",
+      "external_mcc",
+      "external_brier",
+      "external_logloss",
+      "external_boyce",
+      "external_boyce_rank",
+      "external_ece",
+      "external_precision_at_10pct",
+      "external_recall_at_10pct"
+    ]
   },
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
   "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43"

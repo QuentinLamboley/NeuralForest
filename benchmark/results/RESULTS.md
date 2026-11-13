@@ -7,33 +7,37 @@ Final fit time measures the separately trained final estimator.
 Prediction time includes evaluation inference on the held-out set.
 The three stages are also available independently in summary.csv.
 
-The experiment covers 19 scenarios, ten seeds and 31 methods.
-Successful runs: 5890 / 5890.
-Seeds 401 and 503 are new confirmation seeds absent from earlier v0.5 runs.
+The experiment covers 19 scenarios, ten seeds and 31 standard methods
+plus two PU-specific methods in three presence/background scenarios.
+Successful runs: 5950 / 5950.
+Seeds 401 and 503 remain confirmation seeds from the v0.6 audit.
+A second shifted simulator population is evaluated independently
+without using any of its labels during fitting or model selection.
+This is synthetic transfer validation, not real-world external validation.
 
 ## Overall ranking for each scenario
 
 | Scenario | Metric | Top three (ten-seed mean) | NeuralForest adaptatif | Rank | Selection (s) | Final fit (s) | Prediction (s) |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
-| correlated_30 | auc | Voting_Heterogeneous 0.796, GradientBoosting 0.795, Voting_RF_CatBoost 0.794 | 0.790 | 8 | 0.40 | 0.17 | 0.016 |
-| distinct_0 | auc | Voting_RF_ExtraTrees 0.994, ExtraTrees 0.993, Voting_Heterogeneous 0.993 | 0.992 | 14 | 0.22 | 0.05 | 0.009 |
-| distribution_shift | auc | Voting_Heterogeneous 0.692, ExtraTrees 0.691, Voting_RF_ExtraTrees 0.686 | 0.683 | 6 | 0.30 | 0.08 | 0.011 |
-| identical_100 | logloss | Dummy 0.694, NeuralForest_Differentiable 0.694, Stacking_RF_XGB 0.694 | 0.695 | 5 | 0.21 | 0.08 | 0.012 |
-| intermediate_45 | auc | CatBoost 0.909, Stacking_Boosting 0.908, Voting_RF_CatBoost 0.907 | 0.901 | 12 | 0.25 | 0.07 | 0.011 |
-| label_noise_20pct | auc | Voting_Heterogeneous 0.701, CatBoost 0.696, NeuralForest_Differentiable 0.696 | 0.696 | 5 | 0.56 | 0.19 | 0.025 |
-| large_n | auc | CatBoost 0.779, Stacking_Boosting 0.777, Voting_RF_CatBoost 0.776 | 0.772 | 9 | 1.38 | 0.49 | 0.028 |
-| missing_15pct | auc | Stacking_Boosting 0.780, Voting_Heterogeneous 0.779, CatBoost 0.779 | 0.773 | 8 | 0.65 | 0.20 | 0.025 |
-| noise_50 | auc | GradientBoosting 0.786, AdaBoost 0.782, Voting_Boosting 0.781 | 0.773 | 19 | 0.50 | 0.21 | 0.017 |
-| nonlinear_xor | f1 | Voting_RF_CatBoost 0.997, GradientBoosting 0.997, CatBoost 0.997 | 0.983 | 15 | 0.31 | 0.10 | 0.012 |
-| overlap_80 | auc | Voting_Heterogeneous 0.675, AdaBoost 0.671, CatBoost 0.670 | 0.666 | 6 | 0.23 | 0.08 | 0.011 |
-| presence_bg_1to1 | boyce | NeuralForest_SubSample50_Informed 0.995, Logistic 0.995, Voting_Heterogeneous 0.993 | 0.993 | 4 | 0.16 | 0.04 | 0.013 |
-| presence_bg_1to5 | boyce | NeuralForest_Differentiable 0.988, NeuralForest_UndersampledInformed 0.988, RF_BalancedUndersampled 0.987 | 0.986 | 4 | 0.41 | 0.16 | 0.016 |
-| pseudoabsence_hard | boyce | Logistic 0.990, AdaBoost 0.751, Voting_Heterogeneous 0.745 | 0.721 | 4 | 0.17 | 0.04 | 0.012 |
-| rare_10pct | pr_auc | Voting_Heterogeneous 0.521, Logistic 0.508, ExtraTrees 0.505 | 0.502 | 4 | 0.43 | 0.14 | 0.017 |
-| rare_1pct | pr_auc | NeuralForest_Adaptive 0.183, NeuralForest_Calibrated 0.183, Voting_Heterogeneous 0.178 | 0.183 | 1 | 1.86 | 0.87 | 0.022 |
-| rare_3pct | pr_auc | Voting_Heterogeneous 0.290, Logistic 0.284, ExtraTrees 0.272 | 0.272 | 4 | 0.73 | 0.29 | 0.021 |
-| similar_97 | brier | Dummy 0.250, Stacking_RF_XGB 0.251, Stacking_Boosting 0.251 | 0.252 | 6 | 0.21 | 0.08 | 0.012 |
-| small_n | balanced_accuracy | Voting_Heterogeneous 0.661, NeuralForest_UndersampledPlain 0.659, AdaBoost 0.657 | 0.650 | 15 | 0.13 | 0.03 | 0.010 |
+| correlated_30 | auc | Voting_Heterogeneous 0.796, GradientBoosting 0.795, Voting_RF_CatBoost 0.794 | 0.790 | 8 | 0.51 | 0.21 | 0.040 |
+| distinct_0 | auc | Voting_RF_ExtraTrees 0.994, ExtraTrees 0.993, Voting_Heterogeneous 0.993 | 0.992 | 14 | 0.26 | 0.05 | 0.017 |
+| distribution_shift | auc | Voting_Heterogeneous 0.692, ExtraTrees 0.691, Voting_RF_ExtraTrees 0.686 | 0.683 | 6 | 0.37 | 0.10 | 0.030 |
+| identical_100 | logloss | Dummy 0.694, NeuralForest_Differentiable 0.694, Stacking_RF_XGB 0.694 | 0.695 | 5 | 0.25 | 0.08 | 0.024 |
+| intermediate_45 | auc | CatBoost 0.909, Stacking_Boosting 0.908, Voting_RF_CatBoost 0.907 | 0.901 | 12 | 0.29 | 0.07 | 0.021 |
+| label_noise_20pct | auc | Voting_Heterogeneous 0.701, CatBoost 0.696, NeuralForest_Differentiable 0.696 | 0.696 | 5 | 0.35 | 0.13 | 0.034 |
+| large_n | auc | CatBoost 0.779, Stacking_Boosting 0.777, Voting_RF_CatBoost 0.776 | 0.772 | 9 | 1.09 | 0.43 | 0.049 |
+| missing_15pct | auc | Stacking_Boosting 0.780, Voting_Heterogeneous 0.779, CatBoost 0.779 | 0.773 | 8 | 0.40 | 0.14 | 0.032 |
+| noise_50 | auc | GradientBoosting 0.786, AdaBoost 0.782, Voting_Boosting 0.781 | 0.773 | 19 | 0.61 | 0.25 | 0.045 |
+| nonlinear_xor | f1 | Voting_RF_CatBoost 0.997, GradientBoosting 0.997, CatBoost 0.997 | 0.983 | 15 | 0.34 | 0.13 | 0.031 |
+| overlap_80 | auc | Voting_Heterogeneous 0.675, AdaBoost 0.671, CatBoost 0.670 | 0.666 | 6 | 0.27 | 0.08 | 0.022 |
+| presence_bg_1to1 | boyce | NeuralForest_SubSample50_Informed 0.995, Logistic 0.995, Voting_Heterogeneous 0.993 | 0.993 | 4 | 0.19 | 0.06 | 0.040 |
+| presence_bg_1to5 | boyce | NeuralForest_PUInformed 0.990, NeuralForest_Differentiable 0.988, NeuralForest_UndersampledInformed 0.988 | 0.986 | 6 | 0.51 | 0.20 | 0.045 |
+| pseudoabsence_hard | boyce | Logistic 0.990, NeuralForest_PUNeural 0.967, AdaBoost 0.751 | 0.721 | 5 | 0.19 | 0.06 | 0.036 |
+| rare_10pct | pr_auc | Voting_Heterogeneous 0.521, Logistic 0.508, ExtraTrees 0.505 | 0.502 | 4 | 0.33 | 0.12 | 0.030 |
+| rare_1pct | pr_auc | NeuralForest_Adaptive 0.183, NeuralForest_Calibrated 0.183, Voting_Heterogeneous 0.178 | 0.183 | 1 | 1.22 | 0.61 | 0.029 |
+| rare_3pct | pr_auc | Voting_Heterogeneous 0.290, Logistic 0.284, ExtraTrees 0.272 | 0.272 | 4 | 0.60 | 0.25 | 0.038 |
+| similar_97 | brier | Dummy 0.250, Stacking_RF_XGB 0.251, Stacking_Boosting 0.251 | 0.252 | 6 | 0.25 | 0.08 | 0.024 |
+| small_n | balanced_accuracy | Voting_Heterogeneous 0.661, NeuralForest_UndersampledPlain 0.659, AdaBoost 0.657 | 0.650 | 15 | 0.11 | 0.03 | 0.017 |
 
 ## Interpretation
 
@@ -74,6 +78,8 @@ on held-out test sets and were not used to select candidates.
 - paired_v041_comparison.csv: six matched seeds against NeuralForest v0.4.1
 - paired_v05_comparison.csv: eight matched seeds against v0.5
 - METRICS_REPORT.md: rankings across fifteen independent test metrics
+- external_validation.csv: out-of-distribution shifted cohort scores
+- EXTERNAL_VALIDATION.md: shifted-cohort method comparisons
 - all_metric_ranks.csv, metric_winners.csv: all metric rankings
 - ensemble_comparison.csv: voted and stacked ensemble comparison
 - paired_multi_metrics.csv: paired differences and 95% intervals

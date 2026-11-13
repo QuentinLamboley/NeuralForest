@@ -10,27 +10,29 @@ fixed-threshold classification, top-decile retrieval, and Boyce.
 ## Metric-level comparisons
 
 The following values average **ranks**, not incompatible numeric
-scores, across scenarios. Lower average rank is more favorable;
+scores, across all 19 scenarios. PU-specific methods are excluded
+from overall mean-rank comparisons because they run on only three
+presence/background scenarios. Lower average rank is favorable;
 first-place counts are descriptive. These are not significance
 tests and do not establish universal algorithm dominance.
 
 | Metric | Best mean-rank method | Average rank |
 | --- | --- | ---: |
-| roc_auc | Voting_Heterogeneous | 3.37 |
-| pr_auc | Voting_Heterogeneous | 2.05 |
-| balanced_accuracy | Voting_Heterogeneous | 6.11 |
-| f1 | Voting_RF_CatBoost | 8.53 |
-| mcc | Voting_Heterogeneous | 4.47 |
-| precision | Voting_Heterogeneous | 3.63 |
-| recall | GradientBoosting | 8.68 |
-| specificity | Voting_Heterogeneous | 6.63 |
-| brier | Voting_Heterogeneous | 5.79 |
-| logloss | Voting_Heterogeneous | 6.74 |
-| boyce | NeuralForest_Calibrated | 6.63 |
-| boyce_rank | NeuralForest_Calibrated | 8.26 |
-| ece | Dummy | 3.26 |
-| precision_at_10pct | Voting_Heterogeneous | 2.32 |
-| recall_at_10pct | Voting_Heterogeneous | 2.32 |
+| roc_auc | Voting_Heterogeneous | 3.42 |
+| pr_auc | Voting_Heterogeneous | 2.11 |
+| balanced_accuracy | Voting_Heterogeneous | 6.32 |
+| f1 | Voting_RF_CatBoost | 8.68 |
+| mcc | Voting_Heterogeneous | 4.68 |
+| precision | Voting_Heterogeneous | 3.84 |
+| recall | GradientBoosting | 8.79 |
+| specificity | Voting_Heterogeneous | 6.84 |
+| brier | Voting_Heterogeneous | 6.11 |
+| logloss | Voting_Heterogeneous | 7.05 |
+| boyce | NeuralForest_Calibrated | 6.79 |
+| boyce_rank | NeuralForest_Calibrated | 8.42 |
+| ece | Dummy | 3.53 |
+| precision_at_10pct | Voting_Heterogeneous | 2.37 |
+| recall_at_10pct | Voting_Heterogeneous | 2.37 |
 
 ## NeuralForest versus voted and stacked models
 
@@ -88,6 +90,9 @@ The simulated background labels are not verified negatives.
 Optimizing a Boyce value on pseudo-labels can disagree with
 the independent true-label target. No model is guaranteed to
 be optimal for every possible data-generating distribution.
+
+Presence-only nnPU sensitivity results are separately summarized
+in EXTERNAL_VALIDATION.md and pu_specific_ranks.csv.
 
 Files: all_metric_ranks.csv, metric_winners.csv,
 ensemble_comparison.csv, paired_multi_metrics.csv,
