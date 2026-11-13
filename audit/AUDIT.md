@@ -207,3 +207,46 @@ universal superiority, model selection can overfit very rare positive
 classes, balanced sampling can worsen calibration, and benchmarks
 on one synthetic generator do not establish performance on ecology,
 veterinary clinical data, or other real-world applications.
+
+## Version 0.5 measured findings and statistical uncertainty
+
+The completed benchmark has 3,800 successful evaluations from 25 models,
+19 scenarios and eight simulator seeds. All three R CMD check platforms
+passed. The informed class-balanced native forest improved the selected
+primary metric over its otherwise matched uninformed version in 14 of
+19 scenario averages, and worsened the remaining five. The average
+wall-clock total was 0.4462 s for the informed balanced forest and
+0.2195 s for its plain counterpart.
+
+These numerical wins must not be described as established superiority.
+Paired two-sided 95% Student t confidence intervals for the mean
+eight-seed score differences include zero in all 19 individual
+scenarios. Example intervals (favorable-direction informed minus
+plain): presence/background 1:5 Boyce +0.00406, 95% CI
+[-0.00260, +0.01072]; pseudoabsence-hard Boyce +0.03620,
+95% CI [-0.02517, +0.09757]; rare 1% average precision
++0.00808, 95% CI [-0.00396, +0.02011]; noise_50 AUC -0.00197,
+95% CI [-0.00435, +0.00041]. These intervals are approximate and
+do not account for reusing the original simulator scenario families.
+No multiple-comparison adjustment could make a non-significant
+unadjusted interval significant.
+
+In the 1:5 presence-background scenario, the raw balanced random
+forest obtains mean Boyce 0.98743 and its training-prior-corrected
+version obtains 0.91644. This is not necessarily evidence that
+the classifier changed its ranking. The current implementation of
+Boyce discretizes the numerical suitability scale into equal-width
+bins, so monotone transformations of probabilities can change its
+statistic. The ROC AUC of the two versions is nearly identical.
+Do not treat equal-width-bin Boyce as a purely rank-invariant metric;
+test alternate binning definitions before reporting ecological model
+selection conclusions.
+
+The informed 50% ordinary subsample, the class-balanced informed
+forest and the hybrid adaptive NeuralForest remain distinct model
+families. Neither their differences in samples per tree nor their
+different hyperparameter search budgets establish a fair
+same-compute causal comparison. The paired informed-versus-plain
+balanced comparison is the most controlled estimate of network
+guidance, but would still benefit from many more seeds and real
+datasets.

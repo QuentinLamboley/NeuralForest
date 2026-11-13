@@ -73,3 +73,26 @@ These synthetic datasets do not establish universal superiority.
 - COMPUTE_TIME.md: selection, final fit and prediction time by algorithm
 - manifest.json: provenance, seeds, failures and environment
 - benchmark/README.md: full experimental protocol and limitations
+
+## Statistical qualification of the sampling comparison
+
+Across 19 scenario means, the native balanced under-sampling model
+with neural guidance improves the primary metric in 14 scenarios
+and worsens it in five. However, **none of the 19 approximate
+paired 95% confidence intervals (eight seeds) excludes zero**.
+The median per-scenario training-plus-prediction time ratio is
+approximately 2.00; mean total time is 0.4462 s with guidance
+versus 0.2195 s without it.
+
+These observations suggest opportunities for better informed sampling,
+but they do not demonstrate statistically reliable superiority.
+The 1:5 presence-background Boyce advantage is 0.00406 with an
+approximate 95% CI from -0.00260 to +0.01072. The hard pseudoabsence
+advantage is 0.03620 with an interval from -0.02517 to +0.09757.
+
+Boyce values here are based on equal-width bins. They can change under
+monotone calibration transformations that leave AUC unchanged.
+Interpret the particularly large raw-versus-prior-corrected balanced
+random-forest Boyce differences with care. The complete scores,
+classifiers' configurations and measured CPU times remain in
+all_runs.csv, summary.csv and sampling_comparison.csv.
