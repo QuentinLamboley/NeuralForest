@@ -77,35 +77,43 @@ results[[7]] <- run_nf("NeuralForest_UndersampledInformed",
                       FALSE,neural=TRUE,sampling="balanced_undersample",
                       fraction=0.8,replace=FALSE,nrounds=3L)
 if(requireNamespace("ranger",quietly=TRUE)) {
-  d <- xtr
-  ranger_test <- xte
-  # Median imputation for ranger uses training observations only.
-  for(name in names(d)) {
-    value <- as.numeric(d[[name]])
-    value[!is.finite(value)] <- NA_real_
-    med <- if(all(is.na(value))) 0 else stats::median(value,na.rm=TRUE)
-    value[is.na(value)] <- med
-    d[[name]] <- value
-    z <- as.numeric(ranger_test[[name]])
-    z[!is.finite(z)] <- med
-    ranger_test[[name]] <- z
+  # Per-fold imputation: never estimate training medians on held-out
+  # validation or test observations. Time both preprocessing stages.
+  ranger_impute <- function(train_frame,other_frame) {
+    training <- as.data.frame(train_frame)
+    other <- as.data.frame(other_frame)
+    for(name in names(training)) {
+      tr <- as.numeric(training[[name]])
+      tr[!is.finite(tr)] <- NA_real_
+      med <- if(all(is.na(tr))) 0 else stats::median(tr,na.rm=TRUE)
+      tr[is.na(tr)] <- med
+      training[[name]] <- tr
+      v <- as.numeric(other[[name]])
+      v[!is.finite(v)] <- med
+      other[[name]] <- v
+    }
+    list(training=training,other=other)
   }
-  d$.target <- ytr
-  split <- NeuralForest:::nf_split_indices(as.integer(ytr)-1L,"classification",
-                             validation=0.2,seed=seed+17L)
   metric_value <- function(labels,p) {
     as.numeric(nf_metric(labels,p,metric=metric,task="classification"))
   }
   t0 <- proc.time()[["elapsed"]]
+  split <- NeuralForest:::nf_split_indices(as.integer(ytr)-1L,"classification",
+                             validation=0.2,seed=seed+17L)
+  prepared <- ranger_impute(xtr[split$train,,drop=FALSE],
+                            xtr[split$validation,,drop=FALSE])
+  d_fit <- prepared$training
+  d_val <- prepared$other
+  d_fit$.target <- ytr[split$train]
   best_idx <- 1L; best <- if (NeuralForest:::nf_metric_direction(metric)=="minimize") Inf else -Inf
   options <- list(list(mtry=max(1L,floor(sqrt(ncol(xtr)))),min.node.size=2L),
                   list(mtry=max(1L,floor(ncol(xtr)/3)),min.node.size=5L))
   for (i in seq_along(options)) {
-    fit <- ranger::ranger(.target ~ ., data=d[split$train,,drop=FALSE],
+    fit <- ranger::ranger(.target ~ ., data=d_fit,
        num.trees=160L,mtry=options[[i]]$mtry,
        min.node.size=options[[i]]$min.node.size,
        probability=TRUE,num.threads=1L,seed=seed+i)
-    pv <- predict(fit,d[split$validation,,drop=FALSE])$predictions
+    pv <- predict(fit,d_val)$predictions
     s <- metric_value(ytr[split$validation],pv)
     if (is.finite(s) &&
         (if (NeuralForest:::nf_metric_direction(metric)=="minimize") s<best else s>best)) {
@@ -114,6 +122,10 @@ if(requireNamespace("ranger",quietly=TRUE)) {
   }
   select_seconds <- proc.time()[["elapsed"]]-t0
   fit_start <- proc.time()[["elapsed"]]
+  full <- ranger_impute(xtr,xte)
+  d <- full$training
+  d$.target <- ytr
+  ranger_test <- full$other
   opt <- options[[best_idx]]
   final <- ranger::ranger(.target ~ .,data=d,num.trees=160L,
               mtry=opt$mtry,min.node.size=opt$min.node.size,

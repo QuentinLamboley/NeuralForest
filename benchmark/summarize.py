@@ -36,6 +36,12 @@ def summarize():
         f"Expected {expected} score rows but found {len(data)}")
     if data[["scenario","seed","model"]].duplicated().any():
         raise RuntimeError("Duplicated model-scenario-seed result")
+    failed=data[data.status!="ok"]
+    if len(failed):
+        detail=failed[["scenario","seed","model","error"]].head(12)
+        raise RuntimeError(
+            f"{len(failed)} of {expected} models failed; refusing to "
+            f"publish an incomplete benchmark:\n{detail.to_string(index=False)}")
     pair=data[["scenario","seed"]].drop_duplicates()
     if len(pair)!=SCENARIOS*len(SEEDS) or set(data.seed)!=set(SEEDS):
         raise RuntimeError("Missing or duplicate scenario seeds")

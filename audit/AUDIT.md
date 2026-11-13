@@ -327,3 +327,20 @@ the continuous Boyce index used in ecological modelling.
 Statistical intervals from repeated seeds do not generalize
 automatically to independent scientific datasets, and
 multiple comparisons require caution.
+
+### Additional baseline audit: ranger imputation and compute-time scope
+
+The R-based ranger baseline formerly computed median imputation
+from all of its training data before the inner validation split.
+This is a modest but avoidable transductive use of the selector
+holdout's predictors. The selection-stage medians now depend only
+on the inner training fold. The final ranger refit computes
+medians on the complete training partition and applies them
+to the independent test features. Data split and imputation
+preparation are included in the measured selection stage,
+and final-fit preprocessing is included in final-fit time.
+
+The result aggregator refuses to certify or publish results
+unless *all* 5,890 model executions succeeded, including every
+new voting and stacking ensemble and all ranger fits. The complete
+error history remains in CI logs for any failed execution.
