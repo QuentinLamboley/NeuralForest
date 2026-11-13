@@ -1,0 +1,20 @@
+{
+  "datasets": [
+    "Wisconsin_Breast_Cancer",
+    "Wine_Class0",
+    "Digits_Eight"
+  ],
+  "seeds": [
+    911,
+    947,
+    983
+  ],
+  "model_types": 33,
+  "rows": 297,
+  "real_source_public": true,
+  "hidden_labels_simulated": true,
+  "truly_independent_external_sites": false,
+  "comparator_count": 31,
+  "native_pu_methods": 2,
+  "metrics": 16
+}
