@@ -39,6 +39,12 @@ nf_soft_train <- function(Xtr,ytr,Xval,yval,task,K,ctrl,metric,seed) {
     k <- nf_soft_fit(scaled$X,as.numeric((ytr-yc)/ys),val,
                      as.numeric((yval-yc)/ys),config,as.integer(seed),FALSE)
     models <- list(k)
+  } else if (K==2L) {
+    # A binary sigmoid already models both complementary class outcomes.
+    # Avoid fitting two independent OVR trees and renormalizing their outputs.
+    models <- list(nf_soft_fit(
+      scaled$X,as.numeric(ytr==1L),val,as.numeric(yval==1L),
+      config,as.integer(seed+997L),TRUE))
   } else {
     models <- lapply(seq_len(K),function(label) {
       nf_soft_fit(scaled$X,as.numeric(ytr==label-1L),val,
@@ -53,6 +59,11 @@ nf_soft_train <- function(Xtr,ytr,Xval,yval,task,K,ctrl,metric,seed) {
 
 nf_soft_probabilities <- function(model,X) {
   Z <- nf_soft_scale(X,model$center,model$scale)$X
+  if(model$task=="classification" && model$K==2L) {
+    p1 <- as.numeric(nf_soft_predict(model$models[[1L]],Z))
+    p1 <- pmin(1-1e-8,pmax(1e-8,p1))
+    return(cbind(1-p1,p1))
+  }
   raw <- vapply(model$models,
                 function(m) nf_soft_predict(m,Z),numeric(nrow(Z)))
   raw <- matrix(raw,nrow=nrow(Z),ncol=length(model$models))

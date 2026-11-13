@@ -6,7 +6,11 @@ import numpy as np
 
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from design import SCENARIOS, ALL_SCENARIOS, create_data
-from run import metric_table, objective
+from run import metric_table, objective, model_candidates
+from balanced_prior import BalancedPriorCorrectedRF
+from sklearn.ensemble import BaggingClassifier
+from sklearn.tree import DecisionTreeClassifier
+from imblearn.ensemble import BalancedRandomForestClassifier
 
 class BenchmarkProtocolTests(unittest.TestCase):
     def test_scenario_count_and_pinned_labels(self):
@@ -43,6 +47,48 @@ class BenchmarkProtocolTests(unittest.TestCase):
         self.assertAlmostEqual(scores["pr_auc"],1.0)
         self.assertTrue(np.isfinite(scores["logloss"]))
         self.assertAlmostEqual(objective(scores,"auc"),1.0)
+
+    def test_classical_and_undersampled_forest_baselines_exist(self):
+        expected={
+            "RandomForest","RF_Bootstrap50","RF_Subsample50",
+            "RF_Subsample80","RF_BalancedUndersampled",
+            "RF_BalancedUndersampledPrior"}
+        self.assertTrue(expected.issubset(model_candidates(11)))
+        self.assertEqual(len(model_candidates(11)),17)
+
+    def test_no_replacement_and_class_balance_are_genuine(self):
+        rng=np.random.default_rng(12)
+        X=rng.normal(size=(200,4))
+        y=np.concatenate((np.zeros(180,dtype=int),np.ones(20,dtype=int)))
+        model=BaggingClassifier(
+            estimator=DecisionTreeClassifier(max_features="sqrt"),
+            n_estimators=5,max_samples=0.5,bootstrap=False,random_state=11)
+        model.fit(X,y)
+        for selected in model.estimators_samples_:
+            self.assertEqual(len(selected),100)
+            self.assertEqual(len(np.unique(selected)),100)
+        brf=BalancedRandomForestClassifier(
+            n_estimators=5,bootstrap=False,replacement=False,
+            sampling_strategy="all",random_state=11)
+        brf.fit(X,y)
+        for sampler in brf.samplers_:
+            labels=y[sampler.sample_indices_]
+            self.assertEqual(np.bincount(labels,minlength=2).tolist(),[20,20])
+
+    def test_prior_adjustment_uses_training_prevalence(self):
+        rng=np.random.default_rng(13)
+        X=rng.normal(size=(600,3))
+        y=(rng.random(600)<0.10).astype(int)
+        model=BalancedPriorCorrectedRF(
+            n_estimators=25,random_state=13)
+        model.fit(X,y)
+        prob=model.predict_proba(X[:20])
+        raw=model.model_.predict_proba(X[:20])
+        self.assertTrue(np.isfinite(prob).all())
+        self.assertTrue(np.allclose(prob.sum(axis=1),1))
+        self.assertLess(np.mean(prob[:,1]),np.mean(raw[:,1]))
+        mask=(raw[:,1]>0)&(raw[:,1]<1)
+        self.assertTrue(np.all(prob[mask,1]<raw[mask,1]))
 
 if __name__=="__main__":
     unittest.main()

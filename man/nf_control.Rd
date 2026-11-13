@@ -13,7 +13,8 @@ nf_control(n_trees=300L, mtry=NULL, min_leaf=NULL, min_split=NULL,
   neural_guidance=0.6, feature_guidance=0.25,
   neural_temperature=0.8, max_weight_ratio=6,
   class_balance="auto", adaptive=TRUE, patience=2L,
-  sampling_weight_mode="single", linear_expert="none",
+  sampling_weight_mode="single", tree_sampling="standard",
+  linear_expert="none",
   linear_penalties=c(0.0005,0.005,0.05,0.5,3),
   expert_blend=c(0.25,0.5,0.75,1), expert_min_gain=0.001,
   calibration="none", calibration_penalties=c(0.02,0.15,1),
@@ -56,6 +57,7 @@ nf_control(n_trees=300L, mtry=NULL, min_leaf=NULL, min_split=NULL,
 \item{adaptive}{Choose unset defaults using training target profile.}
 \item{patience}{Outer early stopping patience.}
 \item{sampling_weight_mode}{Single uses sample importance only in the draw, double also weights node splitting and leaves. Double preserves the legacy behavior.}
+\item{tree_sampling}{Standard draws observations by the requested bootstrap scheme. Balanced_undersample draws an equal number per class without replacement in each tree, capped at floor(sample_fraction times the minority-class count). Only classification supports balanced undersampling.}
 \item{linear_expert}{None or auto. Auto selects a ridge-regularized linear or constant expert on an internal holdout.}
 \item{linear_penalties}{Candidate positive ridge penalties.}
 \item{expert_blend}{Candidate linear expert mixture coefficients.}

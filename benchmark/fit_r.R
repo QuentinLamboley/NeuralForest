@@ -15,10 +15,14 @@ ytr <- factor(train$Vampirisme,levels=c(0,1))
 yte <- factor(test$Vampirisme,levels=c(0,1))
 results <- list()
 run_nf <- function(label, differentiable, adaptive=FALSE,
-                   calibrated=FALSE) {
+                   calibrated=FALSE, neural=TRUE,
+                   sampling="standard", fraction=0.8,
+                   replace=TRUE, nrounds=2L) {
   cfg <- nf_control(
-    n_trees=130L, min_leaf=2L, sample_fraction=0.8,
-    neural=TRUE, neural_rounds=2L, neural_epochs=12L,
+    n_trees=130L, min_leaf=2L, sample_fraction=fraction,
+    replace=replace,tree_sampling=sampling,
+    class_balance=if(sampling=="balanced_undersample") "none" else "auto",
+    neural=neural, neural_rounds=nrounds, neural_epochs=12L,
     neural_hidden=c(32L,16L),
     differentiable=differentiable,
     soft_n_trees=4L,soft_depth=3L,soft_epochs=24L,
@@ -52,17 +56,26 @@ run_nf <- function(label, differentiable, adaptive=FALSE,
        prediction_seconds=p_duration,
        validation_score=as.numeric(fit$validation_score),
        configuration=sprintf(
-          "native_trees=%d; neural_rounds=%d; soft_depth=%d; soft_trees=%d; blend=%.2f; surrogate=%s; expert=%s; expert_blend=%.2f; calibrated=%s",
+          "native_trees=%d; neural_rounds=%d; soft_depth=%d; soft_trees=%d; blend=%.2f; surrogate=%s; expert=%s; expert_blend=%.2f; calibrated=%s; sampling=%s; sample_fraction=%.2f; replacement=%s",
           cfg$n_trees,cfg$neural_rounds,cfg$soft_depth,
           if(differentiable)cfg$soft_n_trees else 0L,b,
           if(differentiable)fit$soft_model$surrogate else "none",
           expert,if(is.null(fit$expert_selection)) 0 else fit$expert_selection$weight,
-          !is.null(fit$calibration)))
+          !is.null(fit$calibration),sampling,fraction,replace))
 }
 results[[1]] <- run_nf("NeuralForest_CART",FALSE)
 results[[2]] <- run_nf("NeuralForest_Differentiable",TRUE)
 results[[3]] <- run_nf("NeuralForest_Adaptive",TRUE,TRUE)
 results[[4]] <- run_nf("NeuralForest_Calibrated",TRUE,TRUE,TRUE)
+results[[5]] <- run_nf("NeuralForest_SubSample50_Informed",
+                      FALSE,neural=TRUE,sampling="standard",
+                      fraction=0.5,replace=FALSE)
+results[[6]] <- run_nf("NeuralForest_UndersampledPlain",
+                      FALSE,neural=FALSE,sampling="balanced_undersample",
+                      fraction=0.8,replace=FALSE)
+results[[7]] <- run_nf("NeuralForest_UndersampledInformed",
+                      FALSE,neural=TRUE,sampling="balanced_undersample",
+                      fraction=0.8,replace=FALSE,nrounds=3L)
 if(requireNamespace("ranger",quietly=TRUE)) {
   d <- xtr
   ranger_test <- xte
@@ -110,7 +123,7 @@ if(requireNamespace("ranger",quietly=TRUE)) {
   t1 <- proc.time()[["elapsed"]]
   prob <- predict(final,ranger_test)$predictions[,"1"]
   p_duration <- proc.time()[["elapsed"]]-t1
-  results[[5]] <- list(name="ranger",probability=as.numeric(prob),
+  results[[8]] <- list(name="ranger",probability=as.numeric(prob),
      train_seconds=duration,selection_seconds=select_seconds,
      final_fit_seconds=fit_seconds,prediction_seconds=p_duration,
      validation_score=best,

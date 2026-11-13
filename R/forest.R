@@ -34,6 +34,10 @@
 #' @param class_balance none, balanced or auto.
 #' @param adaptive Adapt unset hyperparameters using the target profile.
 #' @param patience Outer validation-based early stopping.
+#' @param tree_sampling Standard sampling or balanced_undersample. The latter
+#'   draws an equal number per class without replacement in every tree;
+#'   the per-class draw is floor(sample_fraction * minority_class_count).
+#'   Only classification supports balanced undersampling.
 #' @param sampling_weight_mode Single applies sampling weights once; double
 #'   preserves the legacy split-weighted bootstrap scheme.
 #' @param linear_expert None or auto, selecting a ridge logistic or linear
@@ -72,7 +76,8 @@ nf_control <- function(
   neural_guidance = 0.6, feature_guidance = 0.25,
   neural_temperature = 0.8, max_weight_ratio = 6,
   class_balance = "auto", adaptive = TRUE, patience = 2L,
-  sampling_weight_mode = "single", linear_expert = "none",
+  sampling_weight_mode = "single", tree_sampling="standard",
+  linear_expert = "none",
   linear_penalties = c(0.0005,0.005,0.05,0.5,3), expert_blend = c(0.25, 0.5, 0.75, 1),
   expert_min_gain = 0.001,
   calibration = "none", calibration_penalties=c(0.02,0.15,1),
@@ -88,6 +93,7 @@ nf_control <- function(
   z$split_search <- match.arg(split_search, c("auto","exact","histogram"))
   z$class_balance <- match.arg(class_balance, c("auto","none","balanced"))
   z$sampling_weight_mode <- match.arg(sampling_weight_mode,c("single","double"))
+  z$tree_sampling <- match.arg(tree_sampling,c("standard","balanced_undersample"))
   z$linear_expert <- match.arg(linear_expert,c("none","auto"))
   z$calibration <- match.arg(calibration,c("none","auto"))
   if(!is.numeric(calibration_penalties) || !length(calibration_penalties) ||
@@ -193,6 +199,8 @@ nf_resolve_control <- function(ctrl, n, p, task, profile) {
     ctrl$split_search <- if (n >= 5000) "histogram" else "exact"
   if (task == "regression" && ctrl$split_rule != "variance")
     stop("Regression supports split_rule='variance' only")
+  if (task == "regression" && ctrl$tree_sampling=="balanced_undersample")
+    stop("Balanced undersampling requires classification")
   if (task == "classification" && ctrl$split_rule == "variance")
     stop("Classification supports gini or entropy splits")
   ctrl$mtry <- max(1L, min(p, as.integer(ctrl$mtry)))
@@ -335,7 +343,8 @@ nf_native_cfg <- function(ctrl) {
        histogram_bins=ctrl$histogram_bins,
        extra_random=ctrl$extra_random, min_gain=ctrl$min_gain,
        laplace=ctrl$laplace, n_threads=ctrl$n_threads,
-       split_weighted=identical(ctrl$sampling_weight_mode,"double"))
+       split_weighted=identical(ctrl$sampling_weight_mode,"double"),
+       sampling_mode=if(ctrl$tree_sampling=="balanced_undersample") 1L else 0L)
 }
 nf_base_weights <- function(y, task, ctrl) {
   w <- rep(1, length(y))

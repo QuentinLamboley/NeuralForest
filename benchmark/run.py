@@ -18,6 +18,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import (RandomForestClassifier, ExtraTreesClassifier,
+                              BaggingClassifier,
                               HistGradientBoostingClassifier,
                               GradientBoostingClassifier, AdaBoostClassifier)
 from sklearn.linear_model import LogisticRegression
@@ -25,6 +26,7 @@ from sklearn.metrics import (
     accuracy_score, balanced_accuracy_score, average_precision_score,
     roc_auc_score, log_loss, brier_score_loss, precision_score, recall_score,
     f1_score, matthews_corrcoef, confusion_matrix)
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import make_pipeline
@@ -33,9 +35,10 @@ from sklearn.impute import SimpleImputer
 from sklearn.svm import SVC
 
 from design import SCENARIOS, create_data
+from balanced_prior import BalancedPriorCorrectedRF
 
 ROOT=Path(__file__).resolve().parents[1]
-SELECTION_SEEDS=(17,43,71,97,131,197)
+SELECTION_SEEDS=(17,43,71,97,131,197,251,347)
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce")
 LOWER={"brier","logloss"}
@@ -87,6 +90,7 @@ def model_candidates(seed):
     from xgboost import XGBClassifier
     from lightgbm import LGBMClassifier
     from catboost import CatBoostClassifier
+    from imblearn.ensemble import BalancedRandomForestClassifier
     return {
       "Dummy":[lambda:DummyClassifier(strategy="prior")],
       "Logistic":[lambda c=c:make_pipeline(StandardScaler(),LogisticRegression(
@@ -94,6 +98,34 @@ def model_candidates(seed):
       "RandomForest":[lambda leaf=leaf:RandomForestClassifier(
           n_estimators=160,min_samples_leaf=leaf,max_features="sqrt",
           random_state=seed,n_jobs=1) for leaf in (1,4)],
+      # Bootstrap with partial-row sampling: a genuine smaller in-bag RF.
+      "RF_Bootstrap50":[lambda leaf=leaf:RandomForestClassifier(
+          n_estimators=160,max_samples=0.5,bootstrap=True,
+          min_samples_leaf=leaf,max_features="sqrt",
+          random_state=seed,n_jobs=1) for leaf in (1,4)],
+      # Bagged randomized trees sampled without replacement, a controlled
+      # classical forest subsampling baseline.
+      "RF_Subsample50":[lambda leaf=leaf:BaggingClassifier(
+          estimator=DecisionTreeClassifier(
+              min_samples_leaf=leaf,max_features="sqrt"),
+          n_estimators=160,max_samples=0.5,bootstrap=False,
+          random_state=seed,n_jobs=1) for leaf in (1,4)],
+      "RF_Subsample80":[lambda leaf=leaf:BaggingClassifier(
+          estimator=DecisionTreeClassifier(
+              min_samples_leaf=leaf,max_features="sqrt"),
+          n_estimators=160,max_samples=0.8,bootstrap=False,
+          random_state=seed,n_jobs=1) for leaf in (1,4)],
+      # Under-sampling means an equal number of majority/minority examples
+      # per tree, with no replacement. This changes probability calibration.
+      "RF_BalancedUndersampled":[lambda leaf=leaf:BalancedRandomForestClassifier(
+          n_estimators=160,bootstrap=False,replacement=False,
+          sampling_strategy="all",min_samples_leaf=leaf,
+          max_features="sqrt",random_state=seed,n_jobs=1)
+          for leaf in (1,4)],
+      "RF_BalancedUndersampledPrior":[lambda leaf=leaf:BalancedPriorCorrectedRF(
+          n_estimators=160,min_samples_leaf=leaf,
+          max_features="sqrt",random_state=seed,n_jobs=1)
+          for leaf in (1,4)],
       "ExtraTrees":[lambda leaf=leaf:ExtraTreesClassifier(
           n_estimators=160,min_samples_leaf=leaf,max_features="sqrt",
           random_state=seed,n_jobs=1) for leaf in (1,4)],
@@ -230,7 +262,10 @@ def run_case(spec,seed,output):
     except Exception as exc:
         message=f"{type(exc).__name__}: {exc}"
         for model in ("ranger","NeuralForest_CART","NeuralForest_Differentiable",
-                      "NeuralForest_Adaptive","NeuralForest_Calibrated"):
+                      "NeuralForest_Adaptive","NeuralForest_Calibrated",
+                      "NeuralForest_SubSample50_Informed",
+                      "NeuralForest_UndersampledPlain",
+                      "NeuralForest_UndersampledInformed"):
             add(model,None,np.nan,np.nan,np.nan,"",status="error",error=message)
     output.mkdir(parents=True,exist_ok=True)
     pd.DataFrame(rows).to_csv(output/f"{dataset_id}.csv",index=False)

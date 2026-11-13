@@ -160,3 +160,50 @@ the absence of distribution-free generalization guarantees.
 The reported mean runtimes are not hardware-normalized
 performance guarantees. The laboratory's separate real-world
 validation datasets should be evaluated before any deployment.
+
+## Version 0.5: informed versus class-balanced and classic forests
+
+The v0.4.1 benchmark did not include directly comparable non-neural
+undersampled random forests or a native class-balanced undersampling
+strategy. The native v0.5 implementation now draws equal-sized class
+strata without replacement, scaled by sample_fraction relative to the
+minority class size. This changes both the statistical sampling problem
+and the effective training sample size. It is not equivalent to tuning
+the same ordinary random forest, so each configuration is reported
+as a separate algorithm.
+
+The native engine exports sampled_class_counts for every tree.
+Regression tests assert equal per-tree class counts, verify no
+replacement and preserve ordinary unbalanced bootstrap behavior.
+An explicit informed/uninformed balanced pair separates learned OOB
+observation-priority guidance from the subsampling itself. A separate
+ordinary 50% without-replacement informed forest is included.
+
+The previous implementation trained separate class-0 and class-1 soft
+forests for binary targets, although a single sigmoid probability
+determines both class probabilities. Version 0.5 trains exactly one
+soft forest for the positive label, returns its complementary class
+probability and validates the normalisation. This halves the number
+of trained binary soft ensembles. Prediction and model selection are
+not guaranteed to match the earlier OVR implementation.
+
+New external baselines include a plain sklearn RandomForest,
+partial bootstrap (50%), independent 50% and 80% subsampling
+without replacement, imbalanced-learn balanced random forests,
+and a separately identified training-prior-corrected balanced
+forest. The prior correction is a deterministic Bayes odds update
+using the **training** class prevalence and cannot use test labels.
+It depends on the prior-shift assumption, which can fail under
+presence-background contamination and distribution shift.
+
+The full 19 x 8 x 25 evaluation reports 3,800 model runs on six
+previous seeds and two new confirmation seeds, including selection,
+final training, and inference time separately. The version v0.4.1
+raw measurements are frozen under audit/baseline-v041-all_runs.csv.
+All score changes are shown including declines.
+
+Further limitations remain: no finite training set can guarantee
+universal superiority, model selection can overfit very rare positive
+classes, balanced sampling can worsen calibration, and benchmarks
+on one synthetic generator do not establish performance on ecology,
+veterinary clinical data, or other real-world applications.

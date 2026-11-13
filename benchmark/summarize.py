@@ -12,10 +12,10 @@ HERE=Path(__file__).resolve().parent
 RAW=HERE/"out"
 RESULTS=HERE/"results"
 BASELINE=ROOT/"audit"/"baseline-v0.2-all_runs.csv"
-SEEDS=(17,43,71,97,131,197)
-NEW_SEEDS=(131,197)
+SEEDS=(17,43,71,97,131,197,251,347)
+NEW_SEEDS=(251,347)
 SCENARIOS=19
-MODELS=17
+MODELS=25
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce")
 MINIMIZE={"brier","logloss"}
@@ -72,6 +72,68 @@ def summarize():
             method="min",ascending=increasing,na_option="bottom")
     sm=sm.sort_values(["scenario","rank","model"])
     sm.to_csv(RESULTS/"summary.csv",index=False)
+    # Keep classical/undersampled forest baselines side by side.
+    forest_models=[
+        "RandomForest","RF_Bootstrap50","RF_Subsample50","RF_Subsample80",
+        "RF_BalancedUndersampled","RF_BalancedUndersampledPrior",
+        "ranger","NeuralForest_CART",
+        "NeuralForest_SubSample50_Informed",
+        "NeuralForest_UndersampledPlain",
+        "NeuralForest_UndersampledInformed",
+        "NeuralForest_Adaptive","NeuralForest_Calibrated"]
+    comparisons=sm[sm.model.isin(forest_models)].copy()
+    comparisons["is_undersampled"]=comparisons.model.str.contains(
+        "Subsample|SubSample|Undersampled|Bootstrap50",case=False,regex=True)
+    comparisons["relative_time_vs_classic_rf"]=np.nan
+    comparisons["primary_gap_vs_classic_rf"]=np.nan
+    comparisons["primary_advantage_vs_classic_rf"]=np.nan
+    for scenario,g in comparisons.groupby("scenario"):
+        rf=g[g.model=="RandomForest"]
+        if len(rf)!=1: raise RuntimeError(f"Missing classic RF for {scenario}")
+        root=rf.iloc[0]
+        same=comparisons.scenario==scenario
+        base_time=float(root.mean_total_seconds)
+        comparisons.loc[same,"relative_time_vs_classic_rf"]=(
+            comparisons.loc[same,"mean_total_seconds"]/base_time)
+        gap=comparisons.loc[same,"primary_mean"]-float(root.primary_mean)
+        comparisons.loc[same,"primary_gap_vs_classic_rf"]=gap
+        comparisons.loc[same,"primary_advantage_vs_classic_rf"]=(
+            -gap if root.primary_metric in MINIMIZE else gap)
+    comparisons.to_csv(RESULTS/"sampling_comparison.csv",index=False)
+    # Generated from the same score table, never a manually copied timing report.
+    t=sm.groupby("model",as_index=False).agg(
+        selection=("mean_selection_seconds","mean"),
+        final_fit=("mean_final_fit_seconds","mean"),
+        prediction=("mean_predict_seconds","mean"),
+        total=("mean_total_seconds","mean"))
+    t=t.sort_values(["total","model"])
+    timing=[
+        "# Computation time: NeuralForest and forest baselines",
+        "",
+        "Observed wall-clock seconds averaged across 19 scenarios and eight seeds.",
+        "Numerical libraries were restricted to one CPU thread. Different runners",
+        "may have distinct performance. Times do not include data generation",
+        "or dependency installation. Internal search budgets differ by estimator.",
+        "",
+        "| Algorithm | Selection (s) | Final fit (s) | Prediction (s) | Total (s) |",
+        "| --- | ---: | ---: | ---: | ---: |"]
+    for item in t.itertuples():
+        timing.append(f"| {item.model} | {fmt(item.selection)} | "
+          f"{fmt(item.final_fit)} | {fmt(item.prediction,4)} | {fmt(item.total)} |")
+    timing.extend(["",
+      "## Comparisons by scenario",
+      "",
+      "A full per-scenario table of the standard RF, 50% and 80% row",
+      "subsampling, class-balanced under-sampling, ranger and informed",
+      "NeuralForest variants is in sampling_comparison.csv. Both the",
+      "primary objective gap and the total-time ratio versus RandomForest",
+      "are stored. Positive primary_advantage_vs_classic_rf is favorable.",
+      "",
+      "All 3,800 per-seed score and timing records appear in all_runs.csv;",
+      "the cross-seed means and standard deviations are in summary.csv.",
+      "The training budget and the initial predictive objective are",
+      "not perfectly matched across algorithm families."])
+    (RESULTS/"COMPUTE_TIME.md").write_text("\n".join(timing)+"\n",encoding="utf8")
     # Historical comparisons are based only on seeds 17 and 43.
     compared=None
     if BASELINE.is_file():
@@ -122,19 +184,19 @@ def summarize():
         "Prediction time includes evaluation inference on the held-out set.",
         "The three stages are also available independently in summary.csv.",
         "",
-        "The experiment covers 19 scenarios, six seeds and 17 methods.",
+        "The experiment covers 19 scenarios, eight seeds and 25 methods.",
         f"Successful runs: {manifest['successes']} / {len(data)}.",
-        "Seeds 131 and 197 were not used during the v0.3 experiment.",
+        "Seeds 251 and 347 are new confirmation seeds absent from earlier v0.4.1 runs.",
         "",
         "## Overall ranking for each scenario",
         "",
-        "| Scenario | Metric | Top three (six-seed mean) | NeuralForest calibrated | Rank | Selection (s) | Final fit (s) | Prediction (s) |",
+        "| Scenario | Metric | Top three (eight-seed mean) | NeuralForest adaptatif | Rank | Selection (s) | Final fit (s) | Prediction (s) |",
         "| --- | --- | --- | --- | ---: | ---: | ---: | ---: |"]
     for name,g in sm.groupby("scenario"):
         top=g.loc[np.isfinite(g.primary_mean)].sort_values("rank").head(3)
         winners=", ".join(f"{r.model} {fmt(r.primary_mean)}"
                           for r in top.itertuples())
-        nf=g[g.model=="NeuralForest_Calibrated"]
+        nf=g[g.model=="NeuralForest_Adaptive"]
         if len(nf):
             row=nf.iloc[0]
             values=(fmt(row.primary_mean),str(int(row["rank"])),
@@ -161,7 +223,7 @@ def summarize():
         "not attributed exclusively to learned tree divisions.",
         "",
         "Historical seed-matched v0.2 comparisons are in",
-        "paired_v02_comparison.csv. Means over seeds 131 and 197 appear in",
+        "paired_v02_comparison.csv. Means over seeds 251 and 347 appear in",
         "new_seed_primary_mean and new_seed_rank in summary.csv.",
         "",
         "Presence-background training negatives are not confirmed human",
@@ -175,9 +237,14 @@ def summarize():
         "## Result files",
         "",
         "- all_runs.csv: all metrics, configurations and timed stages",
+        "- balanced under-sampling uses equal minority/majority per tree",
+        "  without replacement. Each tree uses a training-only class count.",
         "- summary.csv: mean, standard deviation, ranking and phase timings",
         "- paired_v02_comparison.csv: paired original-seed differences",
         "- paired_v03_comparison.csv: 4-seed paired v0.3 versus v0.4 comparison",
+        "- paired_v041_comparison.csv: six matched seeds against NeuralForest v0.4.1",
+        "- sampling_comparison.csv: forest-by-forest subsampling comparison",
+        "- COMPUTE_TIME.md: selection, final fit and prediction time by algorithm",
         "- manifest.json: provenance, seeds, failures and environment",
         "- benchmark/README.md: full experimental protocol and limitations"
     ])

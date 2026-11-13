@@ -137,3 +137,41 @@ for original seeds 17 and 43 and independent confirmation
 means for newly introduced seeds 71 and 97.
 Changes to hyperparameter budgets and algorithm composition
 are recorded in the configurations of each run.
+
+## Version 0.5 forest sampling audit
+
+The full evaluation compares 25 distinct methods, including
+standard scikit-learn RandomForest and ranger implementations;
+RandomForest with 50% bootstrap rows; 50% and 80% row
+subsamples without replacement; class-balanced under-sampling
+without replacement; and an otherwise identical balanced forest
+with training-prevalence correction. Class-prior correction is
+determined from the training fold only, not from test labels.
+
+Native NeuralForest adds three separate controls:
+a neural-informed 50% undersampled forest with no replacement,
+a class-balanced undersampled forest without neural guidance,
+and the same class-balanced design with a three-round
+observation-priority learner. Their timing differences and
+predictive scores isolate the cost and potential benefit of
+neural guidance. The normal and hybrid NeuralForest variants
+are still reported separately.
+
+Eight independent generator seeds are evaluated:
+17, 43, 71, 97, 131, 197, 251 and 347. The final two seeds
+were not included in the previous six-seed experiment.
+All 3,800 individual model fits (19 x 8 x 25) and their
+selection, final-fitting, and prediction times are recorded.
+
+The baseline version 0.4.1 measurements are archived under
+audit/baseline-v041-all_runs.csv before the new benchmark.
+audit/pair_v041.py compares all 1,938 exact matches on
+the six previous seeds. New algorithms have no historical
+counterpart, so they are not falsely included in the matched
+comparison. Summary files are automatically regenerated from
+per-seed measurements and are not manually transcribed.
+
+Balanced under-sampling changes the class prevalence within
+each tree, and training-prior correction only holds under
+ordinary prior-shift assumptions. This does not solve
+presence/background label contamination or distribution shift.

@@ -8,6 +8,12 @@ perceptron (MLP). The MLP learns **which observations are difficult to predict**
 from out-of-bag (OOB) errors and adapts sampling probabilities for subsequent
 forests. Its learned input-layer saliencies also guide feature proposals.
 
+Version 0.5 adds genuine class-balanced under-sampling without replacement,
+per-tree class-draw diagnostics, and a single sigmoid soft-tree model for
+binary classification rather than two redundant one-vs-rest models.
+Comparative benchmarks explicitly separate plain, under-sampled and
+neural-informed forests; no advantage is assumed in advance.
+
 Version 0.4.1 corrects a latent warm-start dimension check, discovered by
 training three guided neural rounds. Regression tests now exercise the
 third round rather than only checking network weight transport in isolation.
@@ -172,6 +178,7 @@ means its reported score is a **selection score**, not an untouched test score.
 | adaptive | Target-aware default values |
 | n_threads | OpenMP threads (falls back to serial if unavailable) |
 | sampling_weight_mode | Single prevents duplicating bootstrap weighting in node impurity |
+| tree_sampling | Standard or class-balanced undersampling without replacement |
 | linear_expert, linear_penalties | Optional ridge-regularized linear alternative |
 | calibration, calibration_penalties | Optional out-of-bag Platt calibration of binary probabilities |
 | calibration_min_gain | Required holdout improvement before calibration is selected |
@@ -256,3 +263,31 @@ neural-round experiment reports all 76 fits in
 The six-seed comparison between all 17 candidate methods is
 maintained in [benchmark/results](benchmark/results), including
 [COMPUTE_TIME.md](benchmark/results/COMPUTE_TIME.md).
+
+## Balanced subsampling example
+
+A genuinely class-balanced, undersampled forest can be trained without
+any neural guidance:
+
+```r
+baseline <- neural_forest(x, y, task="classification", metric="pr_auc",
+  control=nf_control(n_trees=200, neural=FALSE,
+    tree_sampling="balanced_undersample", sample_fraction=0.8))
+baseline$native$sampled_class_counts
+```
+
+To examine whether neural guidance helps beyond the same sampling design:
+
+```r
+guided <- neural_forest(x, y, task="classification", metric="pr_auc",
+  control=nf_control(n_trees=200, neural=TRUE,
+    neural_rounds=3, tree_sampling="balanced_undersample",
+    sample_fraction=0.8))
+```
+
+Balanced undersampling can discard many majority-class examples and can
+change probability calibration; use independent test data and compare
+Brier and log loss as well as AUC, average precision and Boyce. The
+benchmarks also include unbalanced RandomForest, 50% and 80%
+subsampling without replacement, a partial-row bootstrap RF, and
+imbalanced-learn balanced forests with and without prior correction.

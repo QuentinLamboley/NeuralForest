@@ -30,11 +30,13 @@ struct NFConfig {
   int histogram_bins, histogram_mode;
   double min_gain, smoothing;
   bool extra_random, split_weighted;
+  int sampling_mode;
 };
 struct NFModelTree {
   std::vector<NFNode> nodes;
   std::vector<unsigned char> inbag;
   std::vector<double> importance;
+  std::vector<int> sample_class_counts;
 };
 static inline double nf_unit(std::mt19937_64& gen) {
   return std::generate_canonical<double, 53>(gen);
@@ -292,8 +294,23 @@ List nf_cpp_fit(NumericMatrix X, NumericVector y, NumericVector weights,
     as<int>(cfg["split_rule"]), as<int>(cfg["histogram_bins"]),
     as<int>(cfg["histogram_mode"]), as<double>(cfg["min_gain"]),
     as<double>(cfg["laplace"]), as<bool>(cfg["extra_random"]),
-    as<bool>(cfg["split_weighted"])
+    as<bool>(cfg["split_weighted"]), as<int>(cfg["sampling_mode"])
   };
+  if (native_cfg.sampling_mode < 0 || native_cfg.sampling_mode > 1)
+    stop("Unsupported tree sampling mode");
+  if (native_cfg.sampling_mode == 1 && task != 1)
+    stop("Class-balanced undersampling requires classification");
+
+  std::vector<std::vector<int>> balanced_classes;
+  size_t min_class_count=static_cast<size_t>(n);
+  if(native_cfg.sampling_mode==1) {
+    balanced_classes.resize(K);
+    for(int i=0;i<n;++i)
+      balanced_classes[static_cast<int>(y[i])].push_back(i);
+    for(const auto& group:balanced_classes)
+      min_class_count=std::min(min_class_count,group.size());
+    if(min_class_count<2) stop("Balanced forest requires two cases per class");
+  }
   std::vector<NFModelTree> forest(ntree);
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic) num_threads(threads)
@@ -306,7 +323,29 @@ List nf_cpp_fit(NumericMatrix X, NumericVector y, NumericVector weights,
     tree.importance.assign(p, 0.0);
     std::vector<int> ids;
     ids.reserve(take);
-    if (replace) {
+    if (native_cfg.sampling_mode == 1) {
+      // Genuine class-stratified sampling without replacement. For each tree,
+      // draw an equal number per class, capped at the minority size.
+      // Scaling by sample_fraction leaves some minority cases out of bag.
+      const int per_class = std::max(1,
+        std::min(static_cast<int>(min_class_count),
+          static_cast<int>(std::floor(fraction*static_cast<double>(min_class_count)))));
+      ids.reserve(static_cast<size_t>(per_class)*K);
+      for (const auto& g : balanced_classes) {
+        std::vector<std::pair<double,int>> keys;
+        keys.reserve(g.size());
+        for (int i : g) {
+          const double w = std::max(1e-12,static_cast<double>(weights[i]));
+          keys.emplace_back(-std::log(std::max(1e-16,nf_unit(gen)))/w,i);
+        }
+        if (static_cast<size_t>(per_class)<keys.size())
+          std::nth_element(keys.begin(),keys.begin()+per_class,keys.end());
+        for(int j=0;j<per_class;++j) {
+          const int i=keys[j].second;
+          ids.push_back(i);tree.inbag[i]=1;
+        }
+      }
+    } else if (replace) {
       std::discrete_distribution<int> draw(weights.begin(), weights.end());
       for (int a = 0; a < take; ++a) {
         const int i = draw(gen);
@@ -325,6 +364,9 @@ List nf_cpp_fit(NumericMatrix X, NumericVector y, NumericVector weights,
         ids.push_back(i); tree.inbag[i] = 1;
       }
     }
+    tree.sample_class_counts.assign(K,0);
+    for(int i : ids)
+      ++tree.sample_class_counts[task==1?static_cast<int>(y[i]):0];
     NFTreeBuilder builder(X, y, weights, feature_weights, task, K, native_cfg, gen, tree);
     builder.train(ids);
   }
@@ -332,8 +374,11 @@ List nf_cpp_fit(NumericMatrix X, NumericVector y, NumericVector weights,
   NumericMatrix oob_sum(n, K);
   IntegerVector oob_count(n);
   NumericVector importance(p);
+  IntegerMatrix sampled_class_counts(ntree,K);
   for (int t = 0; t < ntree; ++t) {
     const NFModelTree& tree = forest[t];
+    for(int k=0;k<K;++k)
+      sampled_class_counts(t,k)=tree.sample_class_counts[k];
     const int nn = static_cast<int>(tree.nodes.size());
     IntegerVector f(nn), l(nn), r(nn), count(nn);
     NumericVector threshold(nn), gain(nn);
@@ -364,7 +409,8 @@ List nf_cpp_fit(NumericMatrix X, NumericVector y, NumericVector weights,
         oob_sum(i, k) / oob_count[i] : NA_REAL;
   }
   return List::create(_["trees"] = trees, _["oob_prediction"] = oob_sum,
-                      _["oob_count"] = oob_count, _["importance"] = importance);
+                      _["oob_count"] = oob_count, _["importance"] = importance,
+                      _["sampled_class_counts"] = sampled_class_counts);
 }
 
 // [[Rcpp::export]]
