@@ -47,8 +47,8 @@ def main():
     if (data["inner_block"]==data["outer_block"]).any():
         raise RuntimeError("Selected inner block leaks outer evaluation")
     native=data[data.model.str.startswith("NeuralForest_POGrad_")]
-    if native.loc[native.model!="NeuralForest_POGrad_teacher",
-                  "selected_stages"].dropna().between(0,4).all() is False:
+    if not bool(native.loc[native.model!="NeuralForest_POGrad_teacher",
+                  "selected_stages"].dropna().between(0,4).all()):
         raise RuntimeError("Gradient stage count is outside protocol")
     for metric in ("auc_pb","oracle_spearman","oracle_log_skill",
                    "train_seconds","predict_seconds"):
