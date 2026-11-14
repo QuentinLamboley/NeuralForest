@@ -1,23 +1,46 @@
 # PU validation beyond the vampire simulator
 
-Three real, publicly bundled datasets are used: Wisconsin Diagnostic
+Three real publicly bundled datasets are used: Wisconsin Diagnostic
 Breast Cancer, Wine recognition, and handwritten Digits (digit eight
-vs other digits). Labels are artificially hidden for most negative
-and 30% of positive training cases. All methods train on positive
-confirmation versus unlabeled status. Independent original labels
-are used **only** for the two reserved evaluation partitions.
+vs other digits). Each dataset is evaluated under SCAR (uniform
+positive confirmation) and SAR (feature-dependent positive
+confirmation) training-label mechanisms. All negative cases and
+30% of positive training cases have unknown labels. Ground truth
+from two reserved independent evaluation partitions is never
+used by model selection. SAR confirmation propensities depend
+only on a high-variance feature identified among training positives.
 
 This is out-of-simulator validation on real records, but NOT an
 independent hospital, veterinary, geographical or field cohort.
-PU priors remain fixed at 0.12, 0.25 and 0.40 and are not inferred
-from true test outcomes. Three split seeds, 33 methods and 16
-metrics are used, for 297 complete evaluations.
+PU priors remain fixed at 0.12, 0.25 and 0.40; no test-label
+estimate of the class prior is permitted. Three seeds, 34 methods,
+two confirmation regimes and 16 metrics yield 612 evaluations.
 
-| Dataset | Best ROC-AUC method | AUC | NF PU informed | NF adaptive |
-| --- | --- | ---: | ---: | ---: |
-| Digits_Eight | Voting_RF_ExtraTrees | 0.9955 | 0.9740 | 0.9918 |
-| Wine_Class0 | NeuralForest_PUNeural | 0.9977 | 0.9942 | 0.9977 |
-| Wisconsin_Breast_Cancer | ExtraTrees | 0.9919 | 0.9892 | 0.9889 |
+| Dataset | Regime | Best AUC method | AUC | NF stable | NF PU neural | NF PU informed |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| Digits_Eight | SAR | ExtraTrees | 0.9771 | 0.9518 | 0.9495 | 0.9559 |
+| Digits_Eight | SCAR | Voting_RF_ExtraTrees | 0.9955 | 0.9771 | 0.9692 | 0.9740 |
+| Wine_Class0 | SAR | NeuralForest_PUStable | 1.0000 | 1.0000 | 0.9977 | 0.9965 |
+| Wine_Class0 | SCAR | NeuralForest_PUStable | 0.9988 | 0.9988 | 0.9977 | 0.9942 |
+| Wisconsin_Breast_Cancer | SAR | NeuralForest_PUStable | 0.9922 | 0.9922 | 0.9922 | 0.9913 |
+| Wisconsin_Breast_Cancer | SCAR | NeuralForest_PUStable | 0.9929 | 0.9929 | 0.9909 | 0.9892 |
+
+## Stable PU vs predecessor: all metrics and computation
+
+No test-based selection is performed. The stable method's
+cross-fitting, candidate forests, teacher fitting and holdout
+selection are counted under selection_seconds. Its refit and
+inference costs are recorded separately. All model scores and
+times appear in summary.csv and all_runs.csv.
+
+| Dataset | Regime | Stable AP | Neural AP | Stable total (s) | Neural total (s) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Digits_Eight | SAR | 0.8195 | 0.8084 | 2.888 | 0.926 |
+| Digits_Eight | SCAR | 0.9043 | 0.8831 | 3.031 | 0.965 |
+| Wine_Class0 | SAR | 1.0000 | 0.9957 | 0.074 | 0.039 |
+| Wine_Class0 | SCAR | 0.9979 | 0.9957 | 0.075 | 0.040 |
+| Wisconsin_Breast_Cancer | SAR | 0.9907 | 0.9909 | 0.713 | 0.205 |
+| Wisconsin_Breast_Cancer | SCAR | 0.9919 | 0.9908 | 0.819 | 0.203 |
 
 ## Limits
 
