@@ -171,7 +171,13 @@ predict.nf_pu_forest <- function(object,newdata,
   type <- match.arg(type)
   X <- nf_encoding(newdata,fit=object$encoding)$X
   p <- nf_pu_ensemble_predict(object$networks,X)
-  if(!is.null(object$rank_map)) {
+  if(!is.null(object$residual_trees) &&
+     length(object$residual_trees)>0L) {
+    offset <- nf_pu_residual_offset(
+      object$residual_trees,X,object$residual_rate)
+    p <- nf_pu_cpp_logit_adjust(
+      p,offset,object$residual_multiplier,object$residual_cap)
+  } else if(!is.null(object$rank_map)) {
     # Batch-invariant, strictly monotone teacher calibration in native C++.
     p <- nf_pu_cpp_rank_apply(
       p,object$rank_map,1-object$alpha,object$fidelity_cap)

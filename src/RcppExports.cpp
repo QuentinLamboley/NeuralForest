@@ -99,7 +99,24 @@ RcppExport SEXP _NeuralForest_nf_pu_cpp_rank_apply(SEXP teacher,SEXP map,
     as<List>(map),as<double>(blend),as<double>(cap)));
   END_RCPP
 }
+List nf_pu_cpp_residual_targets(NumericVector,NumericVector,NumericVector,double);
+NumericVector nf_pu_cpp_logit_adjust(NumericVector,NumericVector,double,double);
+RcppExport SEXP _NeuralForest_nf_pu_cpp_residual_targets(SEXP prob,SEXP labels,SEXP priors,SEXP cap) {
+ BEGIN_RCPP
+ return wrap(nf_pu_cpp_residual_targets(as<NumericVector>(prob),
+         as<NumericVector>(labels),as<NumericVector>(priors),as<double>(cap)));
+ END_RCPP
+}
+RcppExport SEXP _NeuralForest_nf_pu_cpp_logit_adjust(SEXP prob,SEXP residual,SEXP eta,SEXP cap) {
+ BEGIN_RCPP
+ return wrap(nf_pu_cpp_logit_adjust(as<NumericVector>(prob),
+           as<NumericVector>(residual),as<double>(eta),as<double>(cap)));
+ END_RCPP
+}
 static const R_CallMethodDef CallEntries[] = {
+ {"_NeuralForest_nf_pu_cpp_residual_targets", (DL_FUNC) &_NeuralForest_nf_pu_cpp_residual_targets, 4},
+ {"_NeuralForest_nf_pu_cpp_logit_adjust", (DL_FUNC) &_NeuralForest_nf_pu_cpp_logit_adjust, 4},
+
   {"_NeuralForest_nf_pu_cpp_rank_fit", (DL_FUNC) &_NeuralForest_nf_pu_cpp_rank_fit, 2},
   {"_NeuralForest_nf_pu_cpp_rank_apply", (DL_FUNC) &_NeuralForest_nf_pu_cpp_rank_apply, 4},
   {"_NeuralForest_nf_pu_cpp_stable_weights", (DL_FUNC) &_NeuralForest_nf_pu_cpp_stable_weights, 6},

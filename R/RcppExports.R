@@ -50,3 +50,15 @@ nf_pu_cpp_rank_apply <- function(teacher,mapping,student_fraction,cap) {
   .Call("_NeuralForest_nf_pu_cpp_rank_apply",PACKAGE="NeuralForest",
         as.numeric(teacher),mapping,student_fraction,cap)
 }
+
+
+nf_pu_cpp_residual_targets <- function(probability,labels,priors,gradient_cap=3) {
+  .Call("_NeuralForest_nf_pu_cpp_residual_targets",PACKAGE="NeuralForest",
+        as.numeric(probability),as.numeric(labels),as.numeric(priors),
+        as.numeric(gradient_cap))
+}
+nf_pu_cpp_logit_adjust <- function(teacher,logit_correction,multiplier,logit_cap) {
+  .Call("_NeuralForest_nf_pu_cpp_logit_adjust",PACKAGE="NeuralForest",
+        as.numeric(teacher),as.numeric(logit_correction),
+        as.numeric(multiplier),as.numeric(logit_cap))
+}

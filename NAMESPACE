@@ -23,3 +23,5 @@ export(nf_pu_safe_forest)
 
 export(nf_pu_matched_teacher)
 export(nf_pu_verified_gate)
+
+export(nf_pu_residual_forest)

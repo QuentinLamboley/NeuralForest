@@ -1,0 +1,87 @@
+name: Experimental PU residual pilot
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'R/pu_residual.R'
+      - 'src/pu_residual.cpp'
+      - 'benchmark/pu_residual_pilot.py'
+      - 'benchmark/pu_residual_verified.py'
+      - '.github/workflows/pu-residual-pilot.yml'
+  pull_request:
+    paths:
+      - 'R/pu_residual.R'
+      - 'R/pu.R'
+      - 'src/pu_residual.cpp'
+      - 'src/RcppExports.cpp'
+      - 'R/RcppExports.R'
+      - 'benchmark/pu_residual_pilot.py'
+      - 'benchmark/pu_residual_pilot_r.R'
+      - '.github/workflows/pu-residual-pilot.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::Rcpp, any::jsonlite, any::testthat
+          needs: check
+      - name: Install Python dependencies
+        run: |
+          python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4" "scipy>=1.12,<2" "scikit-learn>=1.5,<2" "xgboost>=2,<4" "catboost>=1.2,<2"
+      - name: Compile native Rcpp code
+        run: |
+          Rscript -e 'Rcpp::compileAttributes(".")'
+          R CMD INSTALL .
+      - name: Validate C++ PU gradients and exact teacher fallback
+        run: Rscript -e 'library(NeuralForest); testthat::test_file("tests/testthat/test-pu-residual.R")'
+      - name: Validate all experimental pilot scripts
+        run: |
+          python -m compileall -q benchmark/pu_residual_pilot.py benchmark/pu_residual_verified.py
+          Rscript -e 'parse(file="benchmark/pu_residual_verified_r.R")' >/dev/null
+      - name: Run exploratory paired pilot and controlled stress suite
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+          NUMEXPR_NUM_THREADS: '1'
+          PYTHONHASHSEED: '0'
+        run: |
+          python benchmark/pu_residual_pilot.py
+          python benchmark/pu_residual_verified.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pu-residual-exploratory-pilot
+          path: audit/pu_residual_pilot_results/
+          if-no-files-found: warn
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pu-residual-controlled-verified
+          path: audit/pu_residual_verified_results/
+          if-no-files-found: warn
+
+      - name: Publish exploratory diagnostics on main
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add audit/pu_residual_pilot_results/ audit/pu_residual_verified_results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Record bounded nnPU residual pilot diagnostics [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi

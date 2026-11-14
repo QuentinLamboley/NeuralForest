@@ -55,6 +55,11 @@ def audit_frame(frame,domain):
     required=set(sum(([p[0],p[1]] for p in PAIRS),[]))
     if not required.issubset(set(frame[model_col])):
         raise ValueError("Matched teacher or required PU models are missing")
+    # PU methods are only fitted in applicable presence/background cases.
+    # Do not emit hundreds of NaN rows for non-PU synthetic scenarios.
+    if not real:
+        applicable=set(frame.loc[frame[model_col]==TEACHER,"scenario"])
+        frame=frame[frame.scenario.isin(applicable)].copy()
     for m in METRICS:
         for prefix in ("","external_"):
             if prefix+m not in frame:
