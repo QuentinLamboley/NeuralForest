@@ -72,6 +72,10 @@ jobs:
           git add audit/pu_residual_legacy_results/
           if ! git diff --cached --quiet; then
             git commit -m "Record matched native PU residual benchmark [skip ci]"
+            # Rcpp::compileAttributes() may leave unstaged tracked edits.
+            # Results are committed above; discard only residual WORKTREE edits
+            # before rebasing this bot-only publish commit onto main.
+            git reset --hard HEAD
             git pull --rebase origin main
             git push origin HEAD:main
           fi
