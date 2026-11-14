@@ -74,7 +74,8 @@ for(kind in c("neural","informed","stable","safe")) {
       prediction_seconds=dt_teacher,
       selection_seconds=fitted$timings$selection_seconds,
       final_fit_seconds=fitted$timings$final_fit_seconds,
-      validation_score=-fitted$validation_pu_risk,
+      validation_score=-as.numeric(
+        fitted$selection_history$worst_risk[[1L]]),
       configuration=paste0(
         "native_nnpu=true;mode=matched_teacher;",
         "shares_training_with=NeuralForest_PUStable;",
