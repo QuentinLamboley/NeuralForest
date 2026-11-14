@@ -55,5 +55,34 @@ for(kind in c("neural","informed","stable","safe")) {
            fitted$stability_diagnostics$ess_fraction,
          if(is.null(fitted$stability_diagnostics)) "legacy" else
            fitted$stability_diagnostics$crossfit_used))
+  if(kind=="stable") {
+    # Matched control: the EXACT same fitted neural networks, encoding,
+    # and prior ensemble as PUStable, but with the forest disabled.
+    # This isolates improvements due to trees from gains due to extra
+    # neural restarts. Both methods share the FULL training cost;
+    # no extra training is performed for this diagnostic.
+    t_teacher <- proc.time()[["elapsed"]]
+    teacher_test <- NeuralForest:::nf_pu_ensemble_predict(
+      fitted$networks,
+      NeuralForest:::nf_encoding(Xtest,fit=fitted$encoding)$X)
+    teacher_ext <- NeuralForest:::nf_pu_ensemble_predict(
+      fitted$networks,
+      NeuralForest:::nf_encoding(Xexternal,fit=fitted$encoding)$X)
+    dt_teacher <- proc.time()[["elapsed"]]-t_teacher
+    models[[length(models)+1L]] <- list(
+      name="NeuralForest_PUStableTeacher",
+      probability=as.numeric(teacher_test),
+      external_probability=as.numeric(teacher_ext),
+      train_seconds=train_time,
+      prediction_seconds=dt_teacher,
+      selection_seconds=fitted$timings$selection_seconds,
+      final_fit_seconds=fitted$timings$final_fit_seconds,
+      validation_score=-fitted$validation_pu_risk,
+      configuration=paste0(
+        "native_nnpu=true;mode=matched_teacher;",
+        "shares_training_with=NeuralForest_PUStable;",
+        "teacher_restarts=2;forest_disabled_at_inference=true;",
+        "timings_shared_training=true"))
+  }
 }
 jsonlite::write_json(list(models=models),file,pretty=TRUE,auto_unbox=TRUE,digits=12)
