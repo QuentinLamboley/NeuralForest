@@ -132,10 +132,10 @@ Changes in software version and CPU runner can affect timings.
 | rare_3pct | NeuralForest_SubSample50_Informed | +0.00000 |
 | rare_3pct | NeuralForest_UndersampledInformed | +0.00000 |
 | rare_3pct | NeuralForest_UndersampledPlain | +0.00000 |
-| similar_97 | NeuralForest_Adaptive | +0.00000 |
+| similar_97 | NeuralForest_Adaptive | -0.00000 |
 | similar_97 | NeuralForest_CART | +0.00000 |
 | similar_97 | NeuralForest_Calibrated | +0.00000 |
-| similar_97 | NeuralForest_Differentiable | +0.00000 |
+| similar_97 | NeuralForest_Differentiable | -0.00000 |
 | similar_97 | NeuralForest_SubSample50_Informed | +0.00000 |
 | similar_97 | NeuralForest_UndersampledInformed | +0.00000 |
 | similar_97 | NeuralForest_UndersampledPlain | +0.00000 |

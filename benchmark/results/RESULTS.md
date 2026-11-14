@@ -23,25 +23,25 @@ This is synthetic transfer validation, not real-world external validation.
 
 | Scenario | Metric | Top three (ten-seed mean) | NeuralForest adaptatif | Rank | Selection (s) | Final fit (s) | Prediction (s) |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
-| correlated_30 | auc | Voting_Heterogeneous 0.796, GradientBoosting 0.795, Voting_RF_CatBoost 0.794 | 0.790 | 8 | 0.54 | 0.21 | 0.044 |
-| distinct_0 | auc | Voting_RF_ExtraTrees 0.994, ExtraTrees 0.993, Voting_Heterogeneous 0.993 | 0.992 | 14 | 0.21 | 0.04 | 0.014 |
-| distribution_shift | auc | Voting_Heterogeneous 0.692, ExtraTrees 0.691, Voting_RF_ExtraTrees 0.686 | 0.683 | 6 | 0.41 | 0.11 | 0.033 |
-| identical_100 | logloss | Dummy 0.694, NeuralForest_Differentiable 0.694, Stacking_RF_XGB 0.694 | 0.695 | 5 | 0.19 | 0.06 | 0.019 |
-| intermediate_45 | auc | CatBoost 0.909, Stacking_Boosting 0.908, Voting_RF_CatBoost 0.907 | 0.901 | 12 | 0.23 | 0.05 | 0.018 |
-| label_noise_20pct | auc | Voting_Heterogeneous 0.701, CatBoost 0.696, NeuralForest_Differentiable 0.696 | 0.696 | 5 | 0.43 | 0.17 | 0.043 |
-| large_n | auc | CatBoost 0.779, Stacking_Boosting 0.777, Voting_RF_CatBoost 0.776 | 0.772 | 9 | 1.09 | 0.43 | 0.049 |
-| missing_15pct | auc | Stacking_Boosting 0.780, Voting_Heterogeneous 0.779, CatBoost 0.779 | 0.773 | 8 | 0.49 | 0.17 | 0.042 |
-| noise_50 | auc | GradientBoosting 0.786, AdaBoost 0.782, Voting_Boosting 0.781 | 0.773 | 19 | 0.65 | 0.26 | 0.051 |
-| nonlinear_xor | f1 | Voting_RF_CatBoost 0.997, GradientBoosting 0.997, CatBoost 0.997 | 0.983 | 15 | 0.37 | 0.13 | 0.035 |
-| overlap_80 | auc | Voting_Heterogeneous 0.675, AdaBoost 0.671, CatBoost 0.670 | 0.666 | 6 | 0.21 | 0.06 | 0.018 |
-| presence_bg_1to1 | boyce | NeuralForest_SubSample50_Informed 0.995, Logistic 0.995, Voting_Heterogeneous 0.993 | 0.993 | 4 | 0.15 | 0.05 | 0.030 |
-| presence_bg_1to5 | boyce | NeuralForest_PUInformed 0.990, NeuralForest_Differentiable 0.988, NeuralForest_PUSafe 0.988 | 0.986 | 7 | 0.40 | 0.16 | 0.034 |
-| pseudoabsence_hard | boyce | Logistic 0.990, NeuralForest_PUStableTeacher 0.970, NeuralForest_PUSafe 0.968 | 0.721 | 8 | 0.15 | 0.05 | 0.027 |
-| rare_10pct | pr_auc | Voting_Heterogeneous 0.521, Logistic 0.508, ExtraTrees 0.505 | 0.502 | 4 | 0.33 | 0.12 | 0.030 |
-| rare_1pct | pr_auc | NeuralForest_Adaptive 0.183, NeuralForest_Calibrated 0.183, Voting_Heterogeneous 0.178 | 0.183 | 1 | 1.58 | 0.76 | 0.039 |
-| rare_3pct | pr_auc | Voting_Heterogeneous 0.290, Logistic 0.284, ExtraTrees 0.272 | 0.272 | 4 | 0.61 | 0.25 | 0.038 |
-| similar_97 | brier | Dummy 0.250, Stacking_RF_XGB 0.251, Stacking_Boosting 0.251 | 0.252 | 6 | 0.19 | 0.06 | 0.019 |
-| small_n | balanced_accuracy | Voting_Heterogeneous 0.661, NeuralForest_UndersampledPlain 0.659, AdaBoost 0.657 | 0.650 | 15 | 0.11 | 0.03 | 0.017 |
+| correlated_30 | auc | Voting_Heterogeneous 0.796, GradientBoosting 0.795, Voting_RF_CatBoost 0.794 | 0.790 | 8 | 0.61 | 0.24 | 0.047 |
+| distinct_0 | auc | Voting_RF_ExtraTrees 0.994, ExtraTrees 0.993, Voting_Heterogeneous 0.993 | 0.992 | 14 | 0.30 | 0.06 | 0.020 |
+| distribution_shift | auc | Voting_Heterogeneous 0.692, ExtraTrees 0.691, Voting_RF_ExtraTrees 0.686 | 0.683 | 6 | 0.44 | 0.12 | 0.035 |
+| identical_100 | logloss | Dummy 0.694, NeuralForest_Differentiable 0.694, Stacking_RF_XGB 0.694 | 0.695 | 5 | 0.27 | 0.09 | 0.027 |
+| intermediate_45 | auc | CatBoost 0.909, Stacking_Boosting 0.908, Voting_RF_CatBoost 0.907 | 0.901 | 12 | 0.33 | 0.08 | 0.025 |
+| label_noise_20pct | auc | Voting_Heterogeneous 0.701, CatBoost 0.696, NeuralForest_Differentiable 0.696 | 0.696 | 5 | 0.35 | 0.14 | 0.032 |
+| large_n | auc | CatBoost 0.779, Stacking_Boosting 0.777, Voting_RF_CatBoost 0.776 | 0.772 | 9 | 1.38 | 0.49 | 0.057 |
+| missing_15pct | auc | Stacking_Boosting 0.780, Voting_Heterogeneous 0.779, CatBoost 0.779 | 0.773 | 8 | 0.40 | 0.14 | 0.032 |
+| noise_50 | auc | GradientBoosting 0.786, AdaBoost 0.782, Voting_Boosting 0.781 | 0.773 | 19 | 0.73 | 0.29 | 0.054 |
+| nonlinear_xor | f1 | Voting_RF_CatBoost 0.997, GradientBoosting 0.997, CatBoost 0.997 | 0.983 | 15 | 0.42 | 0.14 | 0.036 |
+| overlap_80 | auc | Voting_Heterogeneous 0.675, AdaBoost 0.671, CatBoost 0.670 | 0.666 | 6 | 0.30 | 0.09 | 0.026 |
+| presence_bg_1to1 | boyce | NeuralForest_SubSample50_Informed 0.995, Logistic 0.995, Voting_Heterogeneous 0.993 | 0.993 | 4 | 0.23 | 0.06 | 0.045 |
+| presence_bg_1to5 | boyce | NeuralForest_PUInformed 0.990, NeuralForest_Differentiable 0.988, NeuralForest_PUSafe 0.988 | 0.986 | 7 | 0.61 | 0.23 | 0.052 |
+| pseudoabsence_hard | boyce | Logistic 0.990, NeuralForest_PUStableTeacher 0.970, NeuralForest_PUSafe 0.968 | 0.721 | 8 | 0.23 | 0.06 | 0.042 |
+| rare_10pct | pr_auc | Voting_Heterogeneous 0.521, Logistic 0.508, ExtraTrees 0.505 | 0.502 | 4 | 0.40 | 0.14 | 0.035 |
+| rare_1pct | pr_auc | NeuralForest_Adaptive 0.183, NeuralForest_Calibrated 0.183, Voting_Heterogeneous 0.178 | 0.183 | 1 | 1.27 | 0.63 | 0.030 |
+| rare_3pct | pr_auc | Voting_Heterogeneous 0.290, Logistic 0.284, ExtraTrees 0.272 | 0.272 | 4 | 0.73 | 0.29 | 0.044 |
+| similar_97 | brier | Dummy 0.250, Stacking_RF_XGB 0.251, Stacking_Boosting 0.251 | 0.252 | 6 | 0.27 | 0.09 | 0.027 |
+| small_n | balanced_accuracy | Voting_Heterogeneous 0.661, NeuralForest_UndersampledPlain 0.659, AdaBoost 0.657 | 0.650 | 15 | 0.13 | 0.04 | 0.019 |
 
 ## Interpretation
 

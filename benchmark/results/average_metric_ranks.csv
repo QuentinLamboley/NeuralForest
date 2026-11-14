@@ -12,7 +12,7 @@ AdaBoost,precision,21.68421052631579,0,19
 AdaBoost,precision_at_10pct,14.263157894736842,3,19
 AdaBoost,recall,12.105263157894736,0,19
 AdaBoost,recall_at_10pct,14.210526315789474,3,19
-AdaBoost,roc_auc,12.0,2,19
+AdaBoost,roc_auc,11.947368421052632,2,19
 AdaBoost,specificity,23.105263157894736,0,19
 CatBoost,balanced_accuracy,12.526315789473685,2,19
 CatBoost,boyce,18.473684210526315,0,19
@@ -522,7 +522,7 @@ XGBoost,precision,18.736842105263158,0,19
 XGBoost,precision_at_10pct,17.789473684210527,1,19
 XGBoost,recall,16.0,0,19
 XGBoost,recall_at_10pct,17.894736842105264,1,19
-XGBoost,roc_auc,18.105263157894736,0,19
+XGBoost,roc_auc,18.157894736842106,0,19
 XGBoost,specificity,18.42105263157895,0,19
 ranger,balanced_accuracy,16.894736842105264,0,19
 ranger,boyce,17.42105263157895,0,19
