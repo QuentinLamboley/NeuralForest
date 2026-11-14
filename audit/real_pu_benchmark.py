@@ -21,8 +21,9 @@ sys.path.insert(0,str(ROOT/"benchmark"))
 from run import model_candidates,evaluate_sklearn,evaluate_R,metric_table
 
 SEEDS=(911,947,983)
+REGIMES=("SCAR","SAR")
 OUT=ROOT/"audit"/"real_pu_results"
-METHODS=33
+METHODS=34
 SOURCE_INFO={
     "Wisconsin_Breast_Cancer":"sklearn.datasets.load_breast_cancer (Wisconsin Diagnostic Breast Cancer, UCI)",
     "Wine_Class0":"sklearn.datasets.load_wine (Wine recognition, UCI)",
@@ -41,7 +42,7 @@ def load_public(name):
     X=pd.DataFrame(raw.data,columns=[f"x{j:02d}" for j in range(raw.data.shape[1])])
     return X,np.asarray(y,dtype=int)
 
-def evaluate_case(name,seed):
+def evaluate_case(name,seed,regime):
     X,y=load_public(name)
     train_ids,hold_ids=train_test_split(
         np.arange(len(y)),train_size=.6,stratify=y,random_state=seed)
@@ -58,7 +59,23 @@ def evaluate_case(name,seed):
     if n_known>=len(known):
         n_known=len(known)-2
     if n_known<20: raise RuntimeError("Need enough observed positives")
-    visible=rng.choice(known,size=n_known,replace=False)
+    # Feature-dependent positive confirmation (SAR) is constructed using
+    # TRAINING positives only. The learner never sees the confirmation
+    # propensity or the hidden positive identities.
+    feature_index=-1
+    selection_prob=None
+    if regime=="SAR":
+        positive_features=training.iloc[known].to_numpy(dtype=float)
+        # Fixed, training-only high-variance feature to create an explicit
+        # selection mechanism (no access to held-out test outcomes).
+        feature_index=int(np.argmax(positive_features.var(axis=0)))
+        v=positive_features[:,feature_index]
+        z=(v-np.median(v))/max(1e-8,np.std(v))
+        weight=np.exp(np.clip(2*z,-6,6))
+        selection_prob=weight/weight.sum()
+    elif regime!="SCAR":
+        raise ValueError("Unknown positive labeling mechanism")
+    visible=rng.choice(known,size=n_known,replace=False,p=selection_prob)
     pseudo=np.zeros(len(training),dtype=int)
     pseudo[visible]=1
     if len(np.unique(pseudo))<2:raise RuntimeError("No unlabeled cases")
@@ -72,7 +89,8 @@ def evaluate_case(name,seed):
         e=metric_table(yext,np.asarray(extp,dtype=float))
         if not np.isfinite(m["roc_auc"]) or not np.isfinite(e["roc_auc"]):
             raise RuntimeError(f"Invalid AUC from {model}")
-        rows.append(dict(dataset=name,seed=seed,method=model,
+        rows.append(dict(dataset=name,seed=seed,regime=regime,
+           labeling_feature=feature_index,method=model,
            primary_metric=target_metric,
            source=SOURCE_INFO[name],
            train_n=len(training),train_true_positive=int(truth_train.sum()),
@@ -97,9 +115,9 @@ def evaluate_case(name,seed):
                    row["selection_seconds"],row["final_fit_seconds"],
                    row.get("configuration",""))
     if len(rows)!=METHODS or len({r["method"] for r in rows})!=METHODS:
-        raise RuntimeError(f"Expected {METHODS} unique models, got {len(rows)}")
+        raise RuntimeError(f"Expected {METHODS} unique models in {regime}, got {len(rows)}")
     for r in rows:
-        print(f"{name}/{seed} {r['method']:32s} auc={r['roc_auc']:.3f} "
+        print(f"{name}/{regime}/{seed} {r['method']:32s} auc={r['roc_auc']:.3f} "
               f"AP={r['pr_auc']:.3f} ext_AUC={r['external_roc_auc']:.3f}",
               flush=True)
     return rows
@@ -107,17 +125,18 @@ def evaluate_case(name,seed):
 def main():
     OUT.mkdir(parents=True,exist_ok=True)
     all_rows=[]
-    for name in SOURCE_INFO:
+    for regime in REGIMES:
+      for name in SOURCE_INFO:
         for seed in SEEDS:
-            all_rows.extend(evaluate_case(name,seed))
-    if len(all_rows)!=len(SOURCE_INFO)*len(SEEDS)*METHODS:
+            all_rows.extend(evaluate_case(name,seed,regime))
+    if len(all_rows)!=len(SOURCE_INFO)*len(REGIMES)*len(SEEDS)*METHODS:
         raise RuntimeError("Missing real-dataset outcomes")
     fields=list(all_rows[0])
     with (OUT/"all_runs.csv").open("w",newline="",encoding="utf8") as handle:
         writer=csv.DictWriter(handle,fieldnames=fields)
         writer.writeheader();writer.writerows(all_rows)
     df=pd.DataFrame(all_rows)
-    summary=df.groupby(["dataset","method"],as_index=False).agg(
+    summary=df.groupby(["dataset","regime","method"],as_index=False).agg(
         roc_auc_mean=("roc_auc","mean"),
         pr_auc_mean=("pr_auc","mean"),
         brier_mean=("brier","mean"),
@@ -133,27 +152,48 @@ def main():
     lines=[
       "# PU validation beyond the vampire simulator",
       "",
-      "Three real, publicly bundled datasets are used: Wisconsin Diagnostic",
+      "Three real publicly bundled datasets are used: Wisconsin Diagnostic",
       "Breast Cancer, Wine recognition, and handwritten Digits (digit eight",
-      "vs other digits). Labels are artificially hidden for most negative",
-      "and 30% of positive training cases. All methods train on positive",
-      "confirmation versus unlabeled status. Independent original labels",
-      "are used **only** for the two reserved evaluation partitions.",
+      "vs other digits). Each dataset is evaluated under SCAR (uniform",
+      "positive confirmation) and SAR (feature-dependent positive",
+      "confirmation) training-label mechanisms. All negative cases and",
+      "30% of positive training cases have unknown labels. Ground truth",
+      "from two reserved independent evaluation partitions is never",
+      "used by model selection. SAR confirmation propensities depend",
+      "only on a high-variance feature identified among training positives.",
       "",
       "This is out-of-simulator validation on real records, but NOT an",
       "independent hospital, veterinary, geographical or field cohort.",
-      "PU priors remain fixed at 0.12, 0.25 and 0.40 and are not inferred",
-      "from true test outcomes. Three split seeds, 33 methods and 16",
-      "metrics are used, for 297 complete evaluations.",
+      "PU priors remain fixed at 0.12, 0.25 and 0.40; no test-label",
+      "estimate of the class prior is permitted. Three seeds, 34 methods,",
+      "two confirmation regimes and 16 metrics yield 612 evaluations.",
       "",
-      "| Dataset | Best ROC-AUC method | AUC | NF PU informed | NF adaptive |",
-      "| --- | --- | ---: | ---: | ---: |"]
-    for name,g in summary.groupby("dataset"):
+      "| Dataset | Regime | Best AUC method | AUC | NF stable | NF PU neural | NF PU informed |",
+      "| --- | --- | --- | ---: | ---: | ---: | ---: |"]
+    for (name,regime),g in summary.groupby(["dataset","regime"]):
         top=g.sort_values("roc_auc_mean",ascending=False).iloc[0]
-        pu=g[g.method=="NeuralForest_PUInformed"].iloc[0]
-        nf=g[g.method=="NeuralForest_Adaptive"].iloc[0]
-        lines.append(f"| {name} | {top.method} | {top.roc_auc_mean:.4f} | "
-                     f"{pu.roc_auc_mean:.4f} | {nf.roc_auc_mean:.4f} |")
+        stable=g[g.method=="NeuralForest_PUStable"].iloc[0]
+        teacher=g[g.method=="NeuralForest_PUNeural"].iloc[0]
+        informed=g[g.method=="NeuralForest_PUInformed"].iloc[0]
+        lines.append(
+            f"| {name} | {regime} | {top.method} | "
+            f"{top.roc_auc_mean:.4f} | {stable.roc_auc_mean:.4f} | "
+            f"{teacher.roc_auc_mean:.4f} | {informed.roc_auc_mean:.4f} |")
+    lines += ["","## Stable PU vs predecessor: all metrics and computation","",
+       "No test-based selection is performed. The stable method's",
+       "cross-fitting, candidate forests, teacher fitting and holdout",
+       "selection are counted under selection_seconds. Its refit and",
+       "inference costs are recorded separately. All model scores and",
+       "times appear in summary.csv and all_runs.csv.",
+       "",
+       "| Dataset | Regime | Stable AP | Neural AP | Stable total (s) | Neural total (s) |",
+       "| --- | --- | ---: | ---: | ---: | ---: |"]
+    for (name,regime),g in summary.groupby(["dataset","regime"]):
+        st=g[g.method=="NeuralForest_PUStable"].iloc[0]
+        nn=g[g.method=="NeuralForest_PUNeural"].iloc[0]
+        lines.append(f"| {name} | {regime} | {st.pr_auc_mean:.4f} | "
+                     f"{nn.pr_auc_mean:.4f} | {st.seconds_mean:.3f} | "
+                     f"{nn.seconds_mean:.3f} |")
     lines+=["","## Limits","",
      "The pseudo-unlabeled regime is simulated from known real labels.",
      "Outcome labels from the independent test partitions do not train",
@@ -167,10 +207,10 @@ def main():
      "Full results: all_runs.csv, summary.csv and manifest.json."]
     (OUT/"RESULTS.md").write_text("\n".join(lines)+"\n",encoding="utf8")
     manifest=dict(datasets=list(SOURCE_INFO),seeds=list(SEEDS),
-                  model_types=METHODS,rows=len(all_rows),
+                  model_types=METHODS,regimes=list(REGIMES),rows=len(all_rows),
                   real_source_public=True,hidden_labels_simulated=True,
                   truly_independent_external_sites=False,
-                  comparator_count=31,native_pu_methods=2,
+                  comparator_count=31,native_pu_methods=3,
                   metrics=16)
     (OUT/"manifest.json").write_text(
         json.dumps(manifest,indent=2),encoding="utf8")

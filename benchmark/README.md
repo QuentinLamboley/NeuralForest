@@ -269,3 +269,56 @@ accounting for the additional inference burden.
 v0.6 5,890 fits. `audit/pair_v06.py` compares exactly
 5,890 matched scenario/seed/model outcomes, excluding
 the 60 new native PU experiments.
+
+## v0.8 safety-gated PU ensemble: registered protocol
+
+Preserve **all 31** classical, subsampled, balanced-under-
+sampled, boosting, ordinary NeuralForest, voting and stacking
+models from v0.6/v0.7 without changing their source code
+or search spaces. Preserve the original two PU methods.
+Add only `NeuralForest_PUStable` for three presence/background
+scenarios (one-to-one, one-to-five, difficult pseudoabsence).
+The main test cohort and an independently seeded shifted
+simulator cohort are evaluated after model fitting. Neither
+test cohort is used to tune the new model. Fixed ten seeds:
+17, 43, 71, 97, 131, 197, 251, 347, 401, 503.
+
+PU-stable uses an nnPU C++ ensemble with two initializations
+per class-prior assumption (0.12, 0.25, 0.40). Two-fold OOF
+training predictions replace in-sample teacher probabilities
+for bootstrapping. Native C++ importance uses both mean
+posterior and between-teacher disagreement, preserves the
+positive/unlabeled group total mass and enforces unlabeled
+effective sample fraction >=0.96. A separate 20% PU
+holdout is split into two stratified halves for conservative
+worst-prior nnPU risk selection. Available strengths are
+0, .25, .55; mixing coefficients are 0 and .5.
+A forest must improve worst-prior risk by >0.004 in BOTH
+halves versus the neural teacher, or it is not selected.
+When class support is insufficient for safe cross-fitting
+the method falls back to the teacher or an unguided forest,
+rather than manufacturing confident probabilities.
+Selection and fit times count all tested native forests and
+cross-fitted neural teachers. Performance is measured by
+AUC, AP, F1, Brier, log-loss, Boyce, MCC, accuracy,
+balanced accuracy, calibration, precision/recall and
+top-decile metrics, plus shifted-cohort metrics.
+
+The independent-data audit expands to two *synthetic
+confirmation mechanisms applied to real records*: SCAR
+(uniform positive confirmation) and SAR (probability of
+confirmation depends on a high-variance feature identified
+strictly among the training positives). This generates
+three datasets x three seeds x two regimes x 34 methods =
+612 model evaluations. The train/test/external splits
+are unchanged within a seed. Original test labels are
+used only to compute test metrics. No ecological,
+spatially blocked, held-out geographic or clinical-site
+cohorts are currently available in this experiment.
+
+The scientific null hypothesis remains that informed
+sampling provides no improvement beyond a native nnPU
+network or standard forest. The experiment is capable of
+falsifying the improvement claim; no positive result is
+hardcoded. The repeated inspection of old seeds and
+simulated scenarios limits confirmatory interpretation.

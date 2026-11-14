@@ -18,3 +18,4 @@ export(nf_uncertainty)
 
 S3method(predict,nf_pu_forest)
 export(nf_pu_forest)
+export(nf_pu_stable_forest)

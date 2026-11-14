@@ -35,3 +35,9 @@ nf_pu_cpp_predict <- function(model,X) {
 nf_pu_cpp_risk <- function(model,X,y,prior) {
   .Call("_NeuralForest_nf_pu_cpp_risk",PACKAGE="NeuralForest",model,X,y,prior)
 }
+
+nf_pu_cpp_stable_weights <- function(probabilities,labels,strength,
+                                      min_weight,uncertainty_limit,min_ess) {
+  .Call("_NeuralForest_nf_pu_cpp_stable_weights",PACKAGE="NeuralForest",
+        probabilities,labels,strength,min_weight,uncertainty_limit,min_ess)
+}

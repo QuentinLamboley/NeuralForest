@@ -1,6 +1,6 @@
 Package: NeuralForest
 Title: Adaptive Neural-Guided Random Forests
-Version: 0.7.0
+Version: 0.8.0
 Authors@R: person("Quentin", "Lamboley", role = c("aut", "cre"), email = "145555916+QuentinLamboley@users.noreply.github.com")
 Description: A native C++17 random forest engine for classification and regression
     augmented by an out-of-bag neural difficulty learner and gradient-trained
@@ -14,7 +14,9 @@ Description: A native C++17 random forest engine for classification and regressi
     a single complementary soft ensemble for binary classification,
     a native C++ non-negative positive-unlabeled neural estimator,
     sensitivity analysis over prespecified class priors, and a
-    label-uncertainty-guided resampling forest,
+    label-uncertainty-guided resampling forest and a C++ class-mass-preserving
+    stability sampler with constrained effective sample size, disjoint
+    out-of-fold PU teacher predictions and validation-gated fallback,
     precision-recall surrogates and a separate inner validation split
     for early stopping of differentiable trees, preventing holdout reuse.
     Includes metric-driven model selection and phase-level training diagnostics,

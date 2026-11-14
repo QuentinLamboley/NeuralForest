@@ -375,3 +375,58 @@ scores, proper probability scores, expected calibration error,
 top-decile precision/recall, and both ordinary and rank-transformed
 Boyce. The separate metrics are diagnostics for the *same fitted
 models* and are not retrospectively used to tune them.
+
+## Experimental v0.8: stability-constrained PU guidance
+
+The `nf_pu_stable_forest()` experiment addresses two failures
+observed in v0.7: the informed forest used teacher predictions
+on the same observations that trained its teacher, and the
+unlabeled downweighting had a fixed intensity regardless of
+uncertainty or effective sample size. Version 0.8 leaves both
+v0.7 comparators untouched and introduces a third PU-specific
+candidate with the following safeguards:
+
+- Two native C++ nnPU networks per assumed class prior (six in
+  total) expose sensitivity to assumed prior and initialization.
+- Each training observation is scored with a neural ensemble
+  fitted only on the other half of the training data (two-fold
+  cross-fitting). If either PU class is too small, guided
+  resampling is disabled instead of trusting in-sample scores.
+- C++ gate discounts *unlabeled* cases only if neural posterior
+  is positive and model disagreement is limited. Confirmed
+  positives are never discounted; unlabeled group total weight
+  is preserved and effective sample fraction is at least 0.96.
+- Predeclared candidate strengths 0, 0.25, and 0.55 and
+  0/0.5 teacher blending are selected via worst-prior
+  non-negative PU risk on each of two stratified halves of
+  a disjoint PU holdout. A candidate forest is retained only
+  when both halves beat the teacher by the predeclared margin;
+  otherwise the neural-only fallback is used. Independent
+  outcome labels and shifted-cohort labels are never consulted.
+- Selection, final training and two-cohort inference times
+  include the extra neural cross-fitting and candidate fits.
+
+This is a *conservative empirical selection heuristic*, not
+a statistical guarantee of non-inferiority under biased
+label-confirmation. Class-prior and SCAR/SAR assumptions are
+critical; apparent success on environmentally hard-selected
+pseudo-absences cannot validate either assumption.
+
+Version 0.8 benchmarks the same 31 algorithms from v0.6,
+retains both v0.7 PU variants, and adds the stable third PU
+variant only to the three P/U scenarios. Total 5,980 model
+executions (31 x 19 x 10 plus 3 x 3 x 10). A second shifted
+simulation cohort is used for test-only transfer diagnostics.
+Out-of-simulator validation includes three public real
+datasets, three seeds and both SCAR and feature-dependent
+SAR confirmation, 612 model evaluations (34 x 3 x 3 x 2).
+The labels are *artificially hidden* on real records; there
+is no claim of ecological, veterinary, hospital or
+geographically independent validation.
+
+The method is informed by the non-negative PU risk estimator
+of Kiryo et al. (NeurIPS 2017; arXiv:1703.00593) and the
+need to test departures from SCAR (e.g. Kumar & Lambert,
+PULSNAR, PeerJ Computer Science 2024, DOI
+10.7717/peerj-cs.2451). It is not a reproduction of
+PULSNAR or a guarantee that SCAR violations are corrected.

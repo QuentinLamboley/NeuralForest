@@ -60,8 +60,10 @@ nf_pu_forest_weights <- function(y,posterior) {
   weights / mean(weights)
 }
 
-nf_pu_forest_fit <- function(X,y,posterior,n_trees,seed) {
-  weights <- nf_pu_forest_weights(y,posterior)
+nf_pu_forest_fit <- function(X,y,posterior,n_trees,seed,weights=NULL) {
+  if(is.null(weights)) weights <- nf_pu_forest_weights(y,posterior)
+  if(length(weights)!=nrow(X)||any(!is.finite(weights))||any(weights<=0))
+    stop("Invalid native forest sampling weights")
   config <- nf_control(n_trees=n_trees,min_leaf=2L,
      neural=FALSE,differentiable=FALSE,class_balance="none",
      sample_fraction=.8,replace=TRUE,n_threads=1L)

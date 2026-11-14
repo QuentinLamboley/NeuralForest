@@ -15,9 +15,14 @@ Xexternal <- external[,names(external)!="Vampirisme",drop=FALSE]
 label <- as.integer(train$Vampirisme)
 if(!all(label %in% c(0L,1L)))stop("PU training labels must be 0/1")
 models <- list()
-for(kind in c("neural","informed")) {
+for(kind in c("neural","informed","stable")) {
   start <- proc.time()[["elapsed"]]
-  fitted <- nf_pu_forest(X,label,mode=kind,seed=seed,
+  fitted <- if(kind=="stable")
+    nf_pu_stable_forest(X,label,seed=seed,
+      priors=c(.12,.25,.40),hidden=20L,epochs=60L,n_trees=130L,
+      min_gain=.004,strengths=c(.25,.55),min_ess=.96,
+      uncertainty_limit=.35)
+  else nf_pu_forest(X,label,mode=kind,seed=seed,
           priors=c(.12,.25,.40),hidden=20L,epochs=60L,n_trees=130L)
   train_time <- proc.time()[["elapsed"]]-start
   predict_start <- proc.time()[["elapsed"]]
@@ -25,13 +30,24 @@ for(kind in c("neural","informed")) {
   ext <- as.numeric(predict(fitted,Xexternal,type="prob")[,"1"])
   prediction_time <- proc.time()[["elapsed"]]-predict_start
   models[[length(models)+1L]] <- list(
-    name=if(kind=="informed") "NeuralForest_PUInformed" else "NeuralForest_PUNeural",
+    name=switch(kind,neural="NeuralForest_PUNeural",
+                informed="NeuralForest_PUInformed",
+                stable="NeuralForest_PUStable"),
     probability=prediction,external_probability=ext,
     train_seconds=train_time,prediction_seconds=prediction_time,
     selection_seconds=fitted$timings$selection_seconds,
     final_fit_seconds=fitted$timings$final_fit_seconds,
     validation_score=-fitted$validation_pu_risk,
-    configuration=sprintf("native_nnpu=true;mode=%s;hidden=%d;epochs=%d;prior_sensitivity=0.12,0.25,0.40;blend=%.2f;score=negative_max_PU_risk",
-         kind,fitted$hidden,fitted$epochs,fitted$alpha))
+    configuration=sprintf("native_nnpu=true;mode=%s;hidden=%d;epochs=%d;prior_sensitivity=0.12,0.25,0.40;blend=%.2f;score=negative_max_PU_risk;selected=%s;guidance=%.3f;ess=%.4f;crossfit=%s",
+         kind,fitted$hidden,fitted$epochs,fitted$alpha,
+         if(is.null(fitted$selected_candidate)) "legacy" else
+           fitted$selected_candidate,
+         if(is.null(fitted$selected_strength)||
+            !is.finite(fitted$selected_strength)) 0 else
+           fitted$selected_strength,
+         if(is.null(fitted$stability_diagnostics)) NA_real_ else
+           fitted$stability_diagnostics$ess_fraction,
+         if(is.null(fitted$stability_diagnostics)) "legacy" else
+           fitted$stability_diagnostics$crossfit_used)
 }
 jsonlite::write_json(list(models=models),file,pretty=TRUE,auto_unbox=TRUE,digits=12)

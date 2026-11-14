@@ -478,3 +478,78 @@ Non-Negative Risk Estimator. NeurIPS 2017;
 and Bekker J, Davis J. Learning from positive
 and unlabeled data: a survey. Machine Learning
 2020.
+
+## Version 0.8 preregistered engineering corrections
+
+**Failure A: in-sample neural guidance.** v0.7 estimated
+PU positivity for training cases using a neural ensemble
+fitted to those very same cases, which can amplify
+overfitting through sampling. v0.8 cross-fits the native
+C++ nnPU prior ensemble over two disjoint partitions.
+Only other-fold predictions are passed to the C++ sampler.
+If a split would have fewer than about 25 positives
+available before the inner stop split, no guidance is
+allowed. The original PU neural and informed variants
+are preserved as negative and positive reference controls.
+
+**Failure B: overconfident fixed bootstrap.** v0.7 used
+the fixed multiplier max(0.15, 1 - 0.8*posterior) for
+unlabeled cases. v0.8 uses six neural predictions
+(two random initializations for each of three declared
+class priors), retains all confirmed positive weights
+at one, and discounts only strongly positive cases when
+the six predictions agree. C++ normalizes the sum of
+unlabeled weights back to their original count. It then
+shrinks every deviation from one analytically until
+ESS/n_unlabeled >= 0.96. Two prespecified intensities
+are compared to a common uniform-forest baseline using
+the same native forest seed and 130 trees.
+
+**Failure C: validation regret from guided forests.**
+v0.8 compares neural-only fallback, plain unweighted
+forest, both guided strengths, and fixed 50% teacher
+mixtures using only a disjoint outer PU holdout.
+Selection uses the maximum non-negative PU risk over
+predeclared priors on each of two stratified validation
+halves. A candidate forest must improve upon the teacher
+by more than 0.004 on BOTH halves, otherwise the
+neural-only teacher is retained. This gate only
+constrains PU surrogate risk under assumed representative
+sampling; it cannot certify generalization or guard
+against wrong PU priors or SAR/SNAR label selection.
+No independent test labels are available to the gate.
+
+**New falsification tests:** In addition to the identical
+19 scenarios and original ten seeds, report the full
+cross-fitted selection policy on the three PU-background
+scenarios, including what proportion of cases selects the
+teacher fallback, and compare 16 scoring metrics on both
+the standard and shifted simulator cohort. Real public
+data (Digits, Wine, Wisconsin Breast Cancer) are evaluated
+under both uniform SCAR and feature-dependent SAR simulated
+positive confirmation, on three seeds. Both evaluation
+partitions retain original verified labels but these
+are never accessed by model selection. These are
+real records with artificial labels, NOT an independently
+collected clinical, ecological or regional cohort.
+
+**Computational fairness:** All 31 previous baselines and
+two v0.7 PU variants are rerun unchanged, with separate
+selection, refit and two-cohort inference time. PU-stable
+timings include fitting all candidate forests, C++ sampling
+gates, two-fold teacher cross-fitting and full-data
+refit. The extra model is scoped to PU-background
+scenarios, so its mean runtime must not be directly
+compared with 19-scenario baselines. Mathematical libraries
+use one CPU thread in the workflow. Shared hardware,
+budgets and model complexities are not perfectly matched.
+
+Scientific basis: Kiryo et al., "Positive-Unlabeled Learning
+with Non-Negative Risk Estimator", NeurIPS 2017; Kumar
+& Lambert, "Positive Unlabeled Learning Selected Not At
+Random (PULSNAR)", PeerJ Computer Science 2024.
+Both sources emphasize that assumed class priors and
+positive-labeling mechanisms matter. v0.8 does NOT
+implement PULSNAR propensity correction. Subjecting the
+method to a deliberately feature-selected SAR labeling
+regime is a stress test, not a proof of robustness.

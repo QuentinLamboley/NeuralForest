@@ -187,3 +187,86 @@ double nf_pu_cpp_risk(List model,NumericMatrix X,NumericVector y,double prior) {
   if(np==0||nu==0)stop("PU risk needs both groups");
   return prior*pp/np+std::max(0.0,un/nu-prior*pn/np);
 }
+
+ 
+// [[Rcpp::export]]
+List nf_pu_cpp_stable_weights(NumericMatrix probabilities, NumericVector labels,
+                              double strength, double min_weight,
+                              double uncertainty_limit, double min_ess) {
+  // All probabilities originate from out-of-fold neural predictions. The
+  // native gate does not use any true class labels for unlabeled rows.
+  const int n=probabilities.nrow(), k=probabilities.ncol();
+  if(n<2 || k<2 || labels.size()!=n ||
+     !std::isfinite(strength) || strength<0 || strength>1 ||
+     !std::isfinite(min_weight) || min_weight<=0 || min_weight>1 ||
+     !std::isfinite(uncertainty_limit) ||
+     uncertainty_limit<=0 || uncertainty_limit>1 ||
+     !std::isfinite(min_ess) || min_ess<=0 || min_ess>1)
+      stop("Invalid stable PU guidance input");
+  NumericVector weights(n,1.0), reliability(n,0.0);
+  double unlabel_weight_sum=0.0, unlabel_confidence=0.0;
+  int nu=0, supported=0;
+  for(int i=0;i<n;++i){
+    if(labels[i]!=0 && labels[i]!=1)
+      stop("PU labels must be confirmed positives (1) or unlabeled (0)");
+    double mu=0, lo=1, hi=0;
+    for(int j=0;j<k;++j){
+      const double p=probabilities(i,j);
+      if(!std::isfinite(p) || p<0 || p>1)
+        stop("Native PU teacher predictions must be finite probabilities");
+      mu+=p;
+      lo=std::min(lo,p);
+      hi=std::max(hi,p);
+    }
+    mu/=k;
+    if(labels[i]==1)continue; // positive cases never downweighted
+    ++nu;
+    const double sure_positive=std::max(0.0,
+         std::min(1.0,(mu-0.45)/0.35));
+    const double agreement=std::max(0.0,std::min(1.0,
+         1.0-(hi-lo)/uncertainty_limit));
+    const double confidence=sure_positive*agreement;
+    reliability[i]=confidence;
+    unlabel_confidence+=confidence;
+    if(confidence>1e-8)++supported;
+    weights[i]=std::max(min_weight,1-strength*confidence);
+    unlabel_weight_sum+=weights[i];
+  }
+  if(nu<1)stop("PU guidance needs unlabeled observations");
+  // Equalize the total weight of the unlabeled group to its baseline.
+  // Hence uncertainty weighting cannot covertly change the class prior
+  // represented by the labeled-positive/unlabeled forest objective.
+  const double scale=nu/unlabel_weight_sum;
+  double var=0;
+  for(int i=0;i<n;++i){
+    if(labels[i]!=0)continue;
+    weights[i]*=scale;
+    const double delta=weights[i]-1;
+    var+=delta*delta;
+  }
+  var/=nu;
+  // Exact shrink-to-identity to impose ESS/n >= min_ess; since the
+  // within-unlabeled average is one, ESS/n=1/(1+variance).
+  const double max_var=1.0/min_ess-1.0;
+  const double shrink=var>max_var && var>0 ?
+      std::sqrt(max_var/var) : 1.0;
+  double squares=0, smallest=std::numeric_limits<double>::infinity();
+  double biggest=0;
+  for(int i=0;i<n;++i){
+    if(labels[i]!=0)continue;
+    weights[i]=1+shrink*(weights[i]-1);
+    squares+=weights[i]*weights[i];
+    smallest=std::min(smallest,static_cast<double>(weights[i]));
+    biggest=std::max(biggest,static_cast<double>(weights[i]));
+  }
+  return List::create(
+       _["weights"]=weights,
+       _["reliability"]=reliability,
+       _["ess_fraction"]=static_cast<double>(nu)/squares,
+       _["guided_fraction"]=static_cast<double>(supported)/nu,
+       _["mean_confidence"]=unlabel_confidence/nu,
+       _["shrink_factor"]=shrink,
+       _["min_weight"]=smallest,
+       _["max_weight"]=biggest,
+       _["n_unlabeled"]=nu);
+}

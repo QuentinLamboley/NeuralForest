@@ -26,9 +26,9 @@ class IndependentCohortTests(unittest.TestCase):
     def test_existing_model_reference_set_unchanged(self):
         self.assertEqual(len(SELECTION_SEEDS),10)
         self.assertEqual(len(model_candidates(701)),23)
-        # 23 Python+8 R methods from v0.6, plus two native PU methods
-        # evaluated only on three presence/background scenarios.
-        self.assertEqual(19*10*31+3*10*2,5950)
+        # All 31 previously benchmarked methods remain present; three
+        # native PU strategies compete on three PU scenarios.
+        self.assertEqual(19*10*31+3*10*3,5980)
 
 if __name__=="__main__":
     unittest.main()

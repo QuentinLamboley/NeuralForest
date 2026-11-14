@@ -72,7 +72,20 @@ RcppExport SEXP _NeuralForest_nf_pu_cpp_risk(SEXP model,SEXP X,
       as<NumericVector>(y),as<double>(prior)));
   END_RCPP
 }
+List nf_pu_cpp_stable_weights(NumericMatrix,NumericVector,
+    double,double,double,double);
+RcppExport SEXP _NeuralForest_nf_pu_cpp_stable_weights(
+    SEXP prob,SEXP labels,SEXP strength,SEXP floor,
+    SEXP uncertainty,SEXP ess) {
+  BEGIN_RCPP
+  return wrap(nf_pu_cpp_stable_weights(
+    as<NumericMatrix>(prob),as<NumericVector>(labels),
+    as<double>(strength),as<double>(floor),
+    as<double>(uncertainty),as<double>(ess)));
+  END_RCPP
+}
 static const R_CallMethodDef CallEntries[] = {
+  {"_NeuralForest_nf_pu_cpp_stable_weights", (DL_FUNC) &_NeuralForest_nf_pu_cpp_stable_weights, 6},
   {"_NeuralForest_nf_pu_cpp_fit", (DL_FUNC) &_NeuralForest_nf_pu_cpp_fit, 10},
   {"_NeuralForest_nf_pu_cpp_predict", (DL_FUNC) &_NeuralForest_nf_pu_cpp_predict, 2},
   {"_NeuralForest_nf_pu_cpp_risk", (DL_FUNC) &_NeuralForest_nf_pu_cpp_risk, 4},

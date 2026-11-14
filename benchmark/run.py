@@ -409,7 +409,8 @@ def run_case(spec,seed,output):
                     float(run["final_fit_seconds"]),pext)
         except Exception as exc:
             for method in ("NeuralForest_PUNeural",
-                           "NeuralForest_PUInformed"):
+                           "NeuralForest_PUInformed",
+                           "NeuralForest_PUStable"):
                 add(method,None,np.nan,np.nan,np.nan,"",
                     status="error",error=f"{type(exc).__name__}: {exc}")
     output.mkdir(parents=True,exist_ok=True)
