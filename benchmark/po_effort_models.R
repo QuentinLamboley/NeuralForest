@@ -123,9 +123,6 @@ for(which in c("naive","true","proxy")) {
        fitted,newdata=new,type="link"))
     exp(pmin(25,pmax(-25,link)))
   }
-  add(paste0("GLM_",which),list(),0L)
-  # replace the inert preceding row with the actual R logistic score
-  results[[length(results)]]<-NULL
   t1<-proc.time()[["elapsed"]]
   x1<-predict_ecology(ptest)
   x0<-predict_ecology(btest)
