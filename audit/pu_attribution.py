@@ -38,8 +38,9 @@ def paired_values(frame,keys,model_col,student,teacher,metric):
     a=a.sort_index();b=b.reindex(a.index)
     sign=-1 if metric.removeprefix("external_") in MINIMIZE else 1
     delta=sign*(a[metric].to_numpy(float)-b[metric].to_numpy(float))
-    if not np.all(np.isfinite(delta)):
-        raise ValueError("Missing or non-finite metrics in matched comparison")
+    if metric.removeprefix("external_") in STRICT_RANK_METRICS and (
+        not np.all(np.isfinite(delta))):
+        raise ValueError("Missing or non-finite discrimination metrics")
     return a,b,delta
 
 def audit_frame(frame,domain):
@@ -66,16 +67,19 @@ def audit_frame(frame,domain):
                 for metric in METRICS:
                     a,b,d=paired_values(sub,keys,model_col,student,
                                       teacher,prefix+metric)
-                    sd=float(d.std(ddof=1)) if len(d)>1 else float("nan")
+                    finite=d[np.isfinite(d)]
+                    sd=float(finite.std(ddof=1)) if len(finite)>1 else float("nan")
                     pair_rows.append(dict(
                       **dict(zip(group,labels)),comparison=comparison,
                       student=student,teacher=teacher,cohort=cohort,
-                      metric=metric,n=len(d),mean_gain=float(d.mean()),
-                      sd_gain=sd,min_gain=float(d.min()),
-                      max_gain=float(d.max()),
-                      gains=int((d>1e-9).sum()),
-                      losses=int((d< -1e-9).sum()),
-                      ties=int((abs(d)<=1e-9).sum()),
+                      metric=metric,n=len(finite),n_attempted=len(d),
+                      mean_gain=float(finite.mean()) if len(finite) else float("nan"),
+                      sd_gain=sd,
+                      min_gain=float(finite.min()) if len(finite) else float("nan"),
+                      max_gain=float(finite.max()) if len(finite) else float("nan"),
+                      gains=int((finite>1e-9).sum()),
+                      losses=int((finite< -1e-9).sum()),
+                      ties=int((abs(finite)<=1e-9).sum()),
                       mean_student=float(a[prefix+metric].mean()),
                       mean_teacher=float(b[prefix+metric].mean()),
                       mean_student_seconds=float(a.total_seconds.mean()),
