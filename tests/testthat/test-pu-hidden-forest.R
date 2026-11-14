@@ -85,7 +85,7 @@ test_that("raw vs hidden candidates have identical frozen nnPU teacher", {
   expect_true(!isTRUE(random$feature_spec$random$trained))
   expect_equal(random$feature_spec$random$W,
                NeuralForest:::nf_pu_cpp_random_projection(
-                 ncol(random$feature_spec$random$W),
+                 nrow(random$feature_spec$random$W),
                  ncol(random$feature_spec$random$W),
                  9412L+19051L)$W,
                tolerance=1e-12)
