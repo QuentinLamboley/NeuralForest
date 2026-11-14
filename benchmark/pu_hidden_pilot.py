@@ -167,8 +167,11 @@ def main():
        "versus identical original features plus frozen C++ hidden nnPU",
        "activations. The native neural teachers are tested for EXACT",
        "agreement across raw and augmented fits for every seed.",
-       "Sole ablated factors: the feature coordinates and constrained",
-       "candidate-feature sampling mass. All other native tree settings",
+       "A size-matched untrained random-tanh projection controls for",
+       "the mere addition of nonlinear feature dimensions.",
+       "Sole ablated factors: frozen learned vs random vs original",
+       "features and their constrained feature-sampling mass.",
+       "All other native tree settings",
        "and the per-seed training P/U indicators are held fixed.",
        "",
        "The candidate scores shown below were NOT selected on true labels.",
@@ -179,17 +182,20 @@ def main():
        "The supervised controls classify observed P/U indicators and",
        "are not assumed to estimate true positive status under SAR.",
        "",
-       "| Mechanism | PU labels | Teacher AUC | Raw forest AUC | Hidden forest AUC | Hidden minus raw | Verified hidden AUC | Gated selections |",
-       "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+       "| Mechanism | PU labels | Teacher AUC | Raw AUC | Random-tanh AUC | Learned-tanh AUC | Learned minus random | Learned minus raw | Verified learned AUC | Selections |",
+       "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for (scenario,regime),group in df.groupby(["scenario","regime"]):
         get=lambda m:group[group.model==m]
         teacher=get(NATIVE[0])
         raw=get(NATIVE[1])
-        latent=get(NATIVE[2])
-        gated=get(NATIVE[4])
+        random=get(NATIVE[2])
+        latent=get(NATIVE[3])
+        gated=get(NATIVE[6])
         selected=int((gated.selected=="candidate").sum())
         lines.append(f"| {scenario} | {regime} | {teacher.auc.mean():.4f} | "
-           f"{raw.auc.mean():.4f} | {latent.auc.mean():.4f} | "
+           f"{raw.auc.mean():.4f} | {random.auc.mean():.4f} | "
+           f"{latent.auc.mean():.4f} | "
+           f"{latent.auc.mean()-random.auc.mean():+.4f} | "
            f"{latent.auc.mean()-raw.auc.mean():+.4f} | "
            f"{gated.auc.mean():.4f} | {selected}/{len(SEEDS)} |")
     lines+=["","## All controls, multi-metric tests and time","",
@@ -211,8 +217,9 @@ def main():
        "only the subsequent evaluation/test cases are fully held out.",
        "Under SAR/SNAR and selected background, P/U classification",
        "may be a systematically biased surrogate.",
-       "The raw and hidden candidates were each trained independently",
-       "with the same deterministic teacher seed, not from a shared",
+       "Raw, untrained-random and learned-hidden candidates were",
+       "trained independently with identical teacher seeds, not",
+       "from a shared"
        "fit in memory: their training costs are REAL and separate.",
        "The teacher row is an ablation of the raw model's trained",
        "networks: do not add its recorded training time to raw total.",
