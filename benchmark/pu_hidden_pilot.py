@@ -30,7 +30,7 @@ from catboost import CatBoostClassifier
 
 OUT=ROOT/"audit"/"pu_hidden_feature_results"
 SEEDS=(5701,5717,5741)
-SCENARIOS=("interaction_xor","linear","null")
+SCENARIOS=("interaction_xor","linear","no_signal")
 REGIMES=("SCAR","SAR")
 NATIVE=("NeuralForest_PUHiddenTeacher",
         "NeuralForest_PUHiddenRawCandidate",
@@ -42,10 +42,12 @@ METRICS=("auc","ap","brier","logloss","boyce")
 MAIN_COLS=("scenario","regime","seed","model")
 
 def one(scenario,regime,seed):
-    train,y=cohort(seed+10,820,scenario)
-    audit,ya=cohort(seed+50,320,scenario)
-    test,yt=cohort(seed+90,420,scenario)
-    shifted,ye=cohort(seed+130,420,scenario,shift=True)
+    # Keep a descriptive CSV label: pandas treats literal "null" as NA.
+    mechanism="null" if scenario=="no_signal" else scenario
+    train,y=cohort(seed+10,820,mechanism)
+    audit,ya=cohort(seed+50,320,mechanism)
+    test,yt=cohort(seed+90,420,mechanism)
+    shifted,ye=cohort(seed+130,420,mechanism,shift=True)
     visible=make_pu(train,y,regime,seed+301)
     results=[]
     def put(name,p,q,tfit,tpred,selected="none",latent_share=None,
