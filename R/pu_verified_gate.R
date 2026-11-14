@@ -10,6 +10,10 @@ nf_pu_matched_teacher <- function(object) {
     stop("Expected a fitted nf_pu_forest")
   ans <- object
   ans$forest <- NULL
+  ans$forest_align <- NULL
+  ans$feature_spec <- NULL
+  ans$feature_fraction <- NULL
+  ans$feature_diagnostics <- NULL
   ans$rank_map <- NULL
   ans$residual_trees <- NULL
   ans$alpha <- 1

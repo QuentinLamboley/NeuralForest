@@ -62,3 +62,25 @@ nf_pu_cpp_logit_adjust <- function(teacher,logit_correction,multiplier,logit_cap
         as.numeric(teacher),as.numeric(logit_correction),
         as.numeric(multiplier),as.numeric(logit_cap))
 }
+
+
+nf_pu_cpp_hidden_units <- function(model,X,units) {
+  .Call("_NeuralForest_nf_pu_cpp_hidden_units",PACKAGE="NeuralForest",
+        model,X,as.integer(units))
+}
+
+nf_pu_cpp_align_fit <- function(forest,teacher) {
+  .Call("_NeuralForest_nf_pu_cpp_align_fit",PACKAGE="NeuralForest",
+        as.numeric(forest),as.numeric(teacher))
+}
+
+nf_pu_cpp_align_apply <- function(forest,mapping) {
+  .Call("_NeuralForest_nf_pu_cpp_align_apply",PACKAGE="NeuralForest",
+        as.numeric(forest),mapping)
+}
+
+
+nf_pu_cpp_random_projection <- function(input_columns,hidden_units,seed) {
+ .Call("_NeuralForest_nf_pu_cpp_random_projection",PACKAGE="NeuralForest",
+       as.integer(input_columns),as.integer(hidden_units),as.integer(seed))
+}
