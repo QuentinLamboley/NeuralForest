@@ -36,6 +36,7 @@ def summarize():
     data=pd.concat([pd.read_csv(p) for p in paths],ignore_index=True)
     # Each (scenario, seed, model) is unique. Missing fits remain explicit.
     expected=SCENARIOS*len(SEEDS)*MODELS+len(PU_SCENARIOS)*len(SEEDS)*len(PU_MODELS)
+    independent_fits=expected-len(PU_SCENARIOS)*len(SEEDS)
     if len(data)!=expected: raise RuntimeError(
         f"Expected {expected} score rows but found {len(data)}")
     if data[["scenario","seed","model"]].duplicated().any():
@@ -172,7 +173,7 @@ def summarize():
       "primary objective gap and the total-time ratio versus RandomForest",
       "are stored. Positive primary_advantage_vs_classic_rf is favorable.",
       "",
-      "All 6,010 per-seed score and timing records appear in all_runs.csv;",
+      f"All {expected:,} per-seed score and timing records appear in all_runs.csv;",
       "the cross-seed means and standard deviations are in summary.csv.",
       "Prediction time covers BOTH independent true-label test cohorts.",
       "PU methods are evaluated on three presence/background scenarios",
@@ -214,7 +215,8 @@ def summarize():
         seeds=list(SEEDS),new_confirmation_seeds=list(NEW_SEEDS),
         scenarios=sorted(data.scenario.unique().tolist()),
         models=sorted(data.model.unique().tolist()),
-        rows=len(data),successes=int((data.status=="ok").sum()),
+        rows=len(data),independent_model_fits=independent_fits,
+        successes=int((data.status=="ok").sum()),
         failures=data.loc[data.status!="ok",[
             "scenario","seed","model","error"]].fillna("").to_dict("records"),
         paired_old_rows=0 if compared is None else len(compared),
@@ -241,7 +243,9 @@ def summarize():
         "plus five PU-specific predictions in three presence/background scenarios.",
         "The matched two-restart teacher shares the fit and selection cost",
         "of PUStable: it is not a separate independently trained algorithm.",
-        f"Successful runs: {manifest['successes']} / {len(data)}.",
+        f"Successful prediction records: {manifest['successes']} / {len(data)}.",
+        f"Independent model fits: {independent_fits}; the additional",
+        "PUStableTeacher prediction shares its fitted model with PUStable.",
         "Seeds 401 and 503 remain confirmation seeds from the v0.6 audit.",
         "A second shifted simulator population is evaluated independently",
         "without using any of its labels during fitting or model selection.",
@@ -332,7 +336,7 @@ def summarize():
         "used neither this cohort nor its true labels. This is NOT",
         "validation on an independently collected real-world dataset.",
         "",
-        f"The main analysis includes {expected} successful fits and",
+        f"The main analysis includes {expected} successful prediction records and",
         "records all 16 metrics on both independent test populations.",
         "",
         "| Scenario | Metric | Best shifted-cohort model | Shifted score | NeuralForest Adaptive |",
