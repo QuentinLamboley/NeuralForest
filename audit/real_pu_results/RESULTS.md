@@ -13,7 +13,7 @@ only on a high-variance feature identified among training positives.
 This is out-of-simulator validation on real records, but NOT an
 independent hospital, veterinary, geographical or field cohort.
 PU priors remain fixed at 0.12, 0.25 and 0.40; no test-label
-estimate of the class prior is permitted. Three seeds, 34 methods,
+estimate of the class prior is permitted. Three seeds, 35 methods,
 two confirmation regimes and 16 metrics yield 630 evaluations.
 
 | Dataset | Regime | Best AUC method | AUC | NF safe | NF stable | NF PU neural | NF PU informed |

@@ -47,7 +47,7 @@ jobs:
           Rscript -e 'parse(file="benchmark/fit_pu_r.R"); parse(file="R/pu_stable.R")' >/dev/null
       - name: Install NeuralForest
         run: R CMD INSTALL .
-      - name: Validate real public datasets against all 33 models
+      - name: Validate 35 methods on public data with SCAR and SAR
         env:
           OPENBLAS_NUM_THREADS: '1'
           OMP_NUM_THREADS: '1'
