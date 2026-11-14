@@ -82,6 +82,10 @@ jobs:
           git add audit/pu_residual_pilot_results/ audit/pu_residual_verified_results/
           if ! git diff --cached --quiet; then
             git commit -m "Record bounded nnPU residual pilot diagnostics [skip ci]"
+            # Rcpp::compileAttributes() may leave unstaged tracked edits.
+            # Results are committed above; discard only residual WORKTREE edits
+            # before rebasing this bot-only publish commit onto main.
+            git reset --hard HEAD
             git pull --rebase origin main
             git push origin HEAD:main
           fi
