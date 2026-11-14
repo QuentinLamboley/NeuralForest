@@ -609,3 +609,22 @@ and deliberately cannot improve AUC or AP. Empirical PU gate decisions now
 require noninferiority for *every prior on each half*, instead of only for
 the maximum aggregated risk. Calibration and magnitude-sensitive metrics
 remain unprotected; SAR, SNAR and misspecified prevalence remain limitations.
+
+## v0.9.2 matched teacher and verified outcome protocol
+
+Earlier PUStable-versus-PUNeural comparisons confounded the number
+of neural random restarts (two vs one per class prior).
+The PUStableTeacher diagnostic shares all fitted neural networks,
+preprocessing and search overhead with PUStable, but excludes trees
+at inference. Hence paired gains isolate the incremental tree effect.
+PUStableTeacher is a component ablation, not another training run.
+The posthoc attribution report checks each seed and both independent
+test partitions, including AUC, AP, Boyce and proper scores.
+The strict rank-invariance assertion does not select models.
+
+The optional verified-outcome gate requires a fully disjoint cohort
+with true positive and negative outcomes. It has prespecified two-half
+gain and Brier/AP guardrails, plus exact neural fallback when the
+cohort is too small. It cannot guarantee transportability.
+These previously inspected simulation labels must not be reused
+for choosing new modeling strategies.
