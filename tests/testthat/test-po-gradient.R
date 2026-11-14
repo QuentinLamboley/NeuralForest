@@ -69,7 +69,11 @@ test_that("raw/random/learned IPP gradient trees use consistent score scale", {
     expect_true(all(is.finite(c(pp,bb)) & c(pp,bb)>0))
     expect_equal(predict(m,ab,type="log_relative"),
                  log(bb),tolerance=1e-9)
-    expect_equal(mean(predict(m,bg)),1,tolerance=1e-8)
+    expect_true(isTRUE(m$validation_refitted))
+    # After selecting stage count on the disjoint inner block, the final
+    # normalizer is fitted on ALL outer-training background, including
+    # the inner fold, not on the original training subset alone.
+    expect_equal(mean(predict(m,rbind(bg,ab))),1,tolerance=1e-8)
   }
   expect_error(nf_po_gradient_forest(p,bg,
       validation_presences=ap),"both or neither")
