@@ -49,7 +49,7 @@ test_that("raw, trained neural, and untrained random forests all run", {
     expect_true(all(is.finite(c(x,y))))
     expect_true(all(c(x,y)>0))
     expect_true(fit$training$total_seconds>=0)
-    expect_equal(mean(predict(fit,b)),1,tolerance=1e-5)
+    expect_equal(mean(predict(fit,bg)),1,tolerance=1e-5)
   }
   expect_identical(is.null(hidden$random_network),TRUE)
   expect_identical(is.null(random$random_network),FALSE)
