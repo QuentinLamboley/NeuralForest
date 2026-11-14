@@ -140,7 +140,24 @@ RcppExport SEXP _NeuralForest_nf_pu_cpp_random_projection(SEXP features,SEXP uni
                                           as<int>(units),as<int>(seed)));
  END_RCPP
 }
+List nf_po_cpp_fit(NumericMatrix,NumericVector,NumericVector,int,int,double,double,int);
+NumericVector nf_po_cpp_predict(List,NumericMatrix);
+RcppExport SEXP _NeuralForest_nf_po_cpp_fit(SEXP X,SEXP y,SEXP bg,SEXP h,SEXP epochs,SEXP rate,SEXP decay,SEXP seed) {
+ BEGIN_RCPP
+ return wrap(nf_po_cpp_fit(as<NumericMatrix>(X),as<NumericVector>(y),
+    as<NumericVector>(bg),as<int>(h),as<int>(epochs),
+    as<double>(rate),as<double>(decay),as<int>(seed)));
+ END_RCPP
+}
+RcppExport SEXP _NeuralForest_nf_po_cpp_predict(SEXP model,SEXP X) {
+ BEGIN_RCPP
+ return wrap(nf_po_cpp_predict(as<List>(model),as<NumericMatrix>(X)));
+ END_RCPP
+}
 static const R_CallMethodDef CallEntries[] = {
+ {"_NeuralForest_nf_po_cpp_fit", (DL_FUNC) &_NeuralForest_nf_po_cpp_fit, 8},
+ {"_NeuralForest_nf_po_cpp_predict", (DL_FUNC) &_NeuralForest_nf_po_cpp_predict, 2},
+
  {"_NeuralForest_nf_pu_cpp_random_projection", (DL_FUNC) &_NeuralForest_nf_pu_cpp_random_projection, 3},
 
  {"_NeuralForest_nf_pu_cpp_hidden_units", (DL_FUNC) &_NeuralForest_nf_pu_cpp_hidden_units, 3},
