@@ -17,7 +17,7 @@ back to the neural-only predictor.
 | --- | ---: | ---: | ---: | ---: | --- |
 | presence_bg_1to1 | 0.9865 | 0.9865 | 0.9875 | 0.9669 | neural_fallback: 10 |
 | presence_bg_1to5 | 0.9872 | 0.9899 | 0.9851 | 0.9786 | neural_fallback: 10 |
-| pseudoabsence_hard | 0.9670 | 0.6202 | 0.4512 | 0.4093 | guided_0.25: 4, guided_0.25_blend50: 1, guided_0.55: 3, plain: 1, plain_blend50: 1 |
+| pseudoabsence_hard | 0.9670 | 0.6202 | 0.7572 | 0.7362 | guided_0.25: 3, guided_0.25_blend50: 1, neural_fallback: 6 |
 
 ## What the gate can and cannot ensure
 
@@ -41,3 +41,27 @@ All 31 established forest, boosting, neural, voting and
 stacking comparators remain unchanged.
 
 See pu_stability_choices.csv and all_runs.csv for all outcomes.
+
+## Fidelity-constrained native nnPU teacher comparator
+
+The additional PUSafe model anchors its fallback to the exact
+original three-prior native C++ nnPU network. A forest can only
+be selected if BOTH holdout halves improve the worst-prior PU
+risk and maintain Spearman rank correlation >=0.995 with that
+teacher. Candidate forest probabilities are clipped on both
+validation and prediction to within 0.02 absolute probability
+of the teacher, preventing unbounded downstream drift.
+
+| Scenario | Original nnPU Boyce | Safe Boyce | Safe shifted Boyce | Safe selections |
+| --- | ---: | ---: | ---: | --- |
+| presence_bg_1to1 | 0.9865 | 0.9865 | 0.9721 | neural_fallback: 10 |
+| presence_bg_1to5 | 0.9872 | 0.9881 | 0.9808 | neural_fallback: 9, plain: 1 |
+| pseudoabsence_hard | 0.9670 | 0.9684 | 0.9200 | neural_fallback: 9, plain: 1 |
+
+The safe option is a new *exploratory* model, motivated by
+inspection of v0.8 test performance. The same old ten seeds
+cannot establish confirmatory generalization or universal
+superiority. Small absolute probability deviations can still
+change the ordering of near-tied predictions and lower Boyce.
+The unmodified v0.8 PUStable model is retained to make that
+failure visible. Detailed decisions: pu_safe_choices.csv.

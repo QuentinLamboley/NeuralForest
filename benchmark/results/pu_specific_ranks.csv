@@ -1,4 +1,5 @@
 model,mean_primary_rank,first_primary,scenarios,mean_total_seconds
-NeuralForest_PUNeural,9.333333333333334,0,3,0.41703333333333337
-NeuralForest_PUInformed,10.0,1,3,0.6619666666666666
-NeuralForest_PUStable,13.0,0,3,1.5028999999999997
+NeuralForest_PUSafe,9.0,0,3,0.8836666666666666
+NeuralForest_PUNeural,10.0,0,3,0.41673333333333334
+NeuralForest_PUInformed,10.666666666666666,1,3,0.6628666666666666
+NeuralForest_PUStable,11.333333333333334,0,3,1.4571666666666667

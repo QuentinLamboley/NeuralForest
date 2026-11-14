@@ -18,21 +18,21 @@ tests and do not establish universal algorithm dominance.
 
 | Metric | Best mean-rank method | Average rank |
 | --- | --- | ---: |
-| roc_auc | Voting_Heterogeneous | 3.42 |
-| pr_auc | Voting_Heterogeneous | 2.11 |
-| balanced_accuracy | Voting_Heterogeneous | 6.37 |
-| f1 | Voting_Heterogeneous | 8.79 |
-| mcc | Voting_Heterogeneous | 4.74 |
-| precision | Voting_Heterogeneous | 3.95 |
-| recall | GradientBoosting | 8.84 |
-| specificity | Voting_Heterogeneous | 6.95 |
-| brier | Voting_Heterogeneous | 6.21 |
-| logloss | Voting_Heterogeneous | 7.16 |
-| boyce | NeuralForest_Calibrated | 6.79 |
-| boyce_rank | NeuralForest_Calibrated | 8.42 |
-| ece | Dummy | 3.63 |
-| precision_at_10pct | Voting_Heterogeneous | 2.37 |
-| recall_at_10pct | Voting_Heterogeneous | 2.37 |
+| roc_auc | Voting_Heterogeneous | 3.53 |
+| pr_auc | Voting_Heterogeneous | 2.21 |
+| balanced_accuracy | Voting_Heterogeneous | 6.53 |
+| f1 | Voting_RF_CatBoost | 8.79 |
+| mcc | Voting_Heterogeneous | 4.89 |
+| precision | Voting_Heterogeneous | 4.05 |
+| recall | GradientBoosting | 8.89 |
+| specificity | Voting_Heterogeneous | 7.05 |
+| brier | Voting_Heterogeneous | 6.42 |
+| logloss | Voting_Heterogeneous | 7.37 |
+| boyce | NeuralForest_Calibrated | 6.95 |
+| boyce_rank | NeuralForest_Calibrated | 8.58 |
+| ece | Dummy | 3.84 |
+| precision_at_10pct | Voting_Heterogeneous | 2.47 |
+| recall_at_10pct | Voting_Heterogeneous | 2.47 |
 
 ## NeuralForest versus voted and stacked models
 
