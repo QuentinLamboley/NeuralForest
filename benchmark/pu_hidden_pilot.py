@@ -20,6 +20,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.stats import t as student_t
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"benchmark"))
@@ -29,7 +30,7 @@ from xgboost import XGBClassifier
 from catboost import CatBoostClassifier
 
 OUT=ROOT/"audit"/"pu_hidden_feature_results"
-SEEDS=(5701,5717,5741)
+SEEDS=(5701,5717,5741,5779,5801,5813,5839,5879,5903,5939)
 SCENARIOS=("interaction_xor","linear","no_signal")
 REGIMES=("SCAR","SAR")
 NATIVE=("NeuralForest_PUHiddenTeacher",
@@ -161,6 +162,26 @@ def main():
                     favorable_delta=sign*(student[key]-ref[key])))
     pairs=pd.DataFrame(paired)
     pairs.to_csv(OUT/"paired_effect.csv",index=False)
+    # Exploratory paired intervals across independent synthetic seeds.
+    # This is NOT a confirmatory statistical test: the simulator and
+    # initial three seeds have already been inspected.
+    interval_rows=[]
+    for (scenario,regime,contrast,cohort,metric),g in pairs.groupby(
+        ["scenario","regime","contrast","cohort","metric"]):
+        delta=pd.to_numeric(g.favorable_delta,errors="coerce").dropna()
+        n=len(delta)
+        mean=float(delta.mean()) if n else float("nan")
+        sd=float(delta.std(ddof=1)) if n>1 else float("nan")
+        margin=float(student_t.ppf(.975,n-1)*sd/np.sqrt(n)) if n>1 else float("nan")
+        interval_rows.append(dict(scenario=scenario,regime=regime,
+            contrast=contrast,cohort=cohort,metric=metric,n=n,
+            mean_gain=mean,sd_gain=sd,
+            ci95_lower=mean-margin,ci95_upper=mean+margin,
+            wins=int((delta>1e-9).sum()),
+            losses=int((delta< -1e-9).sum()),
+            ties=int((abs(delta)<=1e-9).sum())))
+    intervals=pd.DataFrame(interval_rows)
+    intervals.to_csv(OUT/"paired_intervals.csv",index=False)
     lines=["# Native nnPU hidden-feature-guided forest, paired ablation",
        "",
        "Predeclared training-only comparisons: original numeric features",
@@ -198,6 +219,20 @@ def main():
            f"{latent.auc.mean()-random.auc.mean():+.4f} | "
            f"{latent.auc.mean()-raw.auc.mean():+.4f} | "
            f"{gated.auc.mean():.4f} | {selected}/{len(SEEDS)} |")
+    lines+=["","## Exploratory paired AUC intervals: learned against controls","",
+      "Two-sided 95% Student-t intervals use synthetic seed variation only.",
+      "They are NOT corrected for multiple comparisons, nor externally",
+      "validated confidence intervals for unknown ecological settings.",
+      "",
+      "| Mechanism | Regime | Cohort | Contrast | Mean AUC delta | 95% interval | Wins / seeds |",
+      "| --- | --- | --- | --- | ---: | --- | ---: |"]
+    for r in intervals[(intervals.metric=="auc") &
+        (intervals.contrast.isin(["learned_hidden_vs_random_tanh",
+                                  "learned_hidden_vs_raw"]))].itertuples():
+        lines.append(f"| {r.scenario} | {r.regime} | {r.cohort} | "
+          f"{r.contrast} | {r.mean_gain:+.4f} | "
+          f"[{r.ci95_lower:+.4f}, {r.ci95_upper:+.4f}] | "
+          f"{r.wins}/{r.n} |")
     lines+=["","## All controls, multi-metric tests and time","",
       "| Mechanism | Regime | Method | AUC | PR-AUC | Brier | Shift AUC | Train s | Predict s | Hidden importance share |",
       "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
@@ -224,7 +259,8 @@ def main():
        "The teacher row is an ablation of the raw model's trained",
        "networks: do not add its recorded training time to raw total.",
        "The experiment must not be used to tune on the test outcomes.",
-       "See all_runs.csv and paired_effect.csv for all per-seed metrics.",
+       "See all_runs.csv, paired_effect.csv and paired_intervals.csv",
+       "for every per-seed outcome and unadjusted interval.",
        ""]
     (OUT/"RESULTS.md").write_text("\n".join(lines),encoding="utf-8")
     manifest=dict(scenarios=list(SCENARIOS),regimes=list(REGIMES),
