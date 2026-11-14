@@ -1,7 +1,7 @@
 # Cross-fitted uncertainty-guided PU forests: stability audit
 
 Three legacy PU-background scenarios are compared on ten seeds.
-Only the 3 specialized PU methods see confirmed-positive versus
+Only the PU-specific variants see confirmed-positive versus
 unlabeled labels. The 31 comparator methods remain unchanged.
 The stability-gated model uses six native C++ nnPU networks
 (two initializations at each of three fixed class-prior assumptions).
@@ -9,7 +9,7 @@ Its training-example guidance is based on disjoint 2-fold
 cross-fitted teacher predictions, never in-sample network outputs.
 C++ weighting preserves group mass and ensures unlabeled
 effective sample fraction at least 0.96. A candidate forest
-must beat neural-only worst-prior PU validation risk on both
+must improve PU risk for every predefined prior on both
 separate holdout halves by more than 0.004; otherwise it falls
 back to the neural-only predictor.
 
@@ -61,7 +61,9 @@ of the teacher, preventing unbounded downstream drift.
 The safe option is a new *exploratory* model, motivated by
 inspection of v0.8 test performance. The same old ten seeds
 cannot establish confirmatory generalization or universal
-superiority. Small absolute probability deviations can still
-change the ordering of near-tied predictions and lower Boyce.
+superiority. The v0.9.1 C++ rank-safe projection strictly
+preserves nnPU score order, so PUSafe cannot improve or harm
+AUC/AP relative to the matched legacy nnPU model apart from
+numerical ties. Calibration and ordinary Boyce can still change.
 The unmodified v0.8 PUStable model is retained to make that
 failure visible. Detailed decisions: pu_safe_choices.csv.
