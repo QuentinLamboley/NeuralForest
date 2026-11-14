@@ -1,5 +1,15 @@
 name: PU frozen-hidden-feature ablation
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'R/pu_hidden_forest.R'
+      - 'R/pu.R'
+      - 'R/pu_verified_gate.R'
+      - 'src/pu_latent.cpp'
+      - 'benchmark/pu_hidden_pilot.py'
+      - 'benchmark/pu_hidden_pilot_r.R'
+      - '.github/workflows/pu-hidden-feature.yml'
   pull_request:
     paths:
       - 'R/pu_hidden_forest.R'
@@ -12,7 +22,7 @@ on:
       - '.github/workflows/pu-hidden-feature.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: pu-hidden-feature
   cancel-in-progress: true
@@ -56,3 +66,19 @@ jobs:
           name: pu-frozen-hidden-vs-raw-paired-ablation
           path: audit/pu_hidden_feature_results/
           if-no-files-found: warn
+
+      - name: Publish exact ten-seed paired benchmark results
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add audit/pu_hidden_feature_results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Record ten-seed neural hidden-vs-random ablation [skip ci]"
+            # Rcpp compileAttributes may have modified tracked exports in
+            # this ephemeral runner: discard ONLY unstaged working tree
+            # changes after committing benchmark results.
+            git reset --hard HEAD
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
