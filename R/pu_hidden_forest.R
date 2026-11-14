@@ -6,13 +6,22 @@
 # are NOT necessarily true positive/negative states, especially under
 # SAR/SNAR and spatially selected pseudoabsences.
 
-nf_pu_hidden_spec <- function(networks,per_network=2L,mode="hidden") {
+nf_pu_hidden_spec <- function(networks,per_network=2L,mode="hidden",seed=42L) {
   if(identical(mode,"raw"))return(list(mode="raw",selected=list()))
-  if(!identical(mode,"hidden"))stop("Unknown frozen hidden feature mode")
+  if(!(mode %in% c("hidden","random")))
+    stop("Unknown frozen hidden feature mode")
   if(length(per_network)!=1L||!is.finite(per_network)||
      per_network<1||per_network>12||
      per_network!=as.integer(per_network))
     stop("Invalid number of hidden units per fitted network")
+  if(identical(mode,"random")) {
+    first <- networks$networks[[1L]]
+    q <- as.integer(per_network)*length(networks$networks)
+    projection <- nf_pu_cpp_random_projection(
+      nrow(first$native$W),q,as.integer(seed))
+    return(list(mode="random",random=projection,
+       center=first$center,spread=first$spread))
+  }
   chosen <- lapply(networks$networks,function(net) {
     score <- abs(as.numeric(net$native$output))
     as.integer(order(-score,seq_along(score))[
@@ -25,6 +34,13 @@ nf_pu_hidden_matrix <- function(networks,X,spec) {
   if(!is.matrix(X)||!is.numeric(X)||any(!is.finite(X)))
     stop("Expected finite numeric encoded features for hidden forest")
   if(identical(spec$mode,"raw"))return(X)
+  if(identical(spec$mode,"random")) {
+    first <- nf_pu_scale(X,spec$center,spec$spread)$X
+    h <- nf_pu_cpp_hidden_units(spec$random,first,
+                 as.integer(seq_along(spec$random$bias)))
+    colnames(h) <- paste0("r",seq_len(ncol(h)))
+    return(cbind(X,h))
+  }
   if(!identical(spec$mode,"hidden")||
      length(spec$selected)!=length(networks$networks))
     stop("Frozen hidden feature specification does not match teacher")
@@ -106,7 +122,8 @@ nf_pu_feature_predict <- function(networks,X,forest,spec,alignment,
 #'
 #' @param x PU training predictors.
 #' @param y Observed 1=confirmed positive, 0=unlabeled (NOT negative).
-#' @param mode "hidden" for frozen hidden features; "raw" for
+#' @param mode "hidden" for learned frozen features, "random" for an
+#'   equally sized *untrained* tanh projection control, or "raw" for
 #'   same-network native forest using the original predictors only.
 #' @param gate "pu" surrogate, "verified" independent audit, or
 #'   "candidate" for UNGATED research-only ablation (never deployment).
@@ -129,7 +146,7 @@ nf_pu_feature_predict <- function(networks,X,forest,spec,alignment,
 #' @param verified_min_gain Required AUC improvement on EACH audit half.
 #' @return Fitted nf_pu_forest with exact matched neural baseline.
 #' @export
-nf_pu_feature_forest <- function(x,y,mode=c("hidden","raw"),
+nf_pu_feature_forest <- function(x,y,mode=c("hidden","raw","random"),
     gate=c("pu","verified","candidate"),audit_x=NULL,audit_y=NULL,
     priors=c(.12,.25,.40),seed=42L,hidden=20L,epochs=60L,
     n_trees=130L,max_depth=5L,min_leaf=5L,
@@ -184,7 +201,7 @@ nf_pu_feature_forest <- function(x,y,mode=c("hidden","raw"),
     yt <- yy[outer$train];yv <- yy[outer$validation]
     teacher <- nf_pu_stable_ensemble(tr,yt,priors,hidden,epochs,
                                     seed,restarts=2L)
-    spec <- nf_pu_hidden_spec(teacher,per_network,mode)
+    spec <- nf_pu_hidden_spec(teacher,per_network,mode,seed=seed+19051L)
     teacher_p <- nf_pu_ensemble_predict(teacher,v)
     split <- nf_split_indices(yv,"classification",.49,seed+811L)
     halves <- list(split$train,split$validation)
@@ -217,7 +234,7 @@ nf_pu_feature_forest <- function(x,y,mode=c("hidden","raw"),
   full <- nf_encoding(x)
   full_teacher <- nf_pu_stable_ensemble(full$X,yy,priors,
                      hidden,epochs,seed+989L,restarts=2L)
-  full_spec <- nf_pu_hidden_spec(full_teacher,per_network,mode)
+  full_spec <- nf_pu_hidden_spec(full_teacher,per_network,mode,seed=seed+19051L)
   candidate <- NULL
   if(gate!="pu" || chosen_fraction>0) {
     candidate <- nf_pu_feature_fit(full$X,yy,full_teacher,full_spec,
