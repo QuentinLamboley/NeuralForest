@@ -33,3 +33,5 @@ export(nf_po_metrics)
 
 S3method(predict,nf_po_gradient_forest)
 export(nf_po_gradient_forest)
+
+export(nf_po_effort_forest)
