@@ -40,30 +40,30 @@ overall rank or compared by overall mean compute time.
 
 | Scenario | Model | Main test metric | Shifted-cohort metric | Mean total time (s) |
 | --- | --- | ---: | ---: | ---: |
-| presence_bg_1to1 | Logistic | 0.9948 | 0.9836 | 0.053 |
-| presence_bg_1to1 | NeuralForest_Adaptive | 0.9926 | 0.9869 | 0.343 |
-| presence_bg_1to1 | NeuralForest_PUInformed | 0.9865 | 0.9721 | 0.406 |
-| presence_bg_1to1 | NeuralForest_PUNeural | 0.9865 | 0.9721 | 0.261 |
-| presence_bg_1to1 | NeuralForest_PUSafe | 0.9865 | 0.9721 | 0.525 |
-| presence_bg_1to1 | NeuralForest_PUStable | 0.9875 | 0.9669 | 0.820 |
-| presence_bg_1to1 | NeuralForest_PUStableTeacher | 0.9875 | 0.9669 | 0.825 |
-| presence_bg_1to1 | Voting_Heterogeneous | 0.9934 | 0.9826 | 0.984 |
-| presence_bg_1to5 | Logistic | 0.9627 | 0.9345 | 0.057 |
-| presence_bg_1to5 | NeuralForest_Adaptive | 0.9863 | 0.9655 | 0.897 |
-| presence_bg_1to5 | NeuralForest_PUInformed | 0.9899 | 0.9809 | 1.202 |
+| presence_bg_1to1 | Logistic | 0.9948 | 0.9836 | 0.056 |
+| presence_bg_1to1 | NeuralForest_Adaptive | 0.9926 | 0.9869 | 0.347 |
+| presence_bg_1to1 | NeuralForest_PUInformed | 0.9865 | 0.9721 | 0.405 |
+| presence_bg_1to1 | NeuralForest_PUNeural | 0.9865 | 0.9721 | 0.259 |
+| presence_bg_1to1 | NeuralForest_PUSafe | 0.9865 | 0.9721 | 0.530 |
+| presence_bg_1to1 | NeuralForest_PUStable | 0.9875 | 0.9669 | 0.822 |
+| presence_bg_1to1 | NeuralForest_PUStableTeacher | 0.9875 | 0.9669 | 0.826 |
+| presence_bg_1to1 | Voting_Heterogeneous | 0.9934 | 0.9826 | 1.003 |
+| presence_bg_1to5 | Logistic | 0.9627 | 0.9345 | 0.058 |
+| presence_bg_1to5 | NeuralForest_Adaptive | 0.9863 | 0.9655 | 0.905 |
+| presence_bg_1to5 | NeuralForest_PUInformed | 0.9899 | 0.9809 | 1.205 |
 | presence_bg_1to5 | NeuralForest_PUNeural | 0.9872 | 0.9792 | 0.761 |
-| presence_bg_1to5 | NeuralForest_PUSafe | 0.9881 | 0.9808 | 1.625 |
-| presence_bg_1to5 | NeuralForest_PUStable | 0.9851 | 0.9786 | 2.639 |
-| presence_bg_1to5 | NeuralForest_PUStableTeacher | 0.9851 | 0.9786 | 2.645 |
-| presence_bg_1to5 | Voting_Heterogeneous | 0.9735 | 0.9559 | 1.159 |
-| pseudoabsence_hard | Logistic | 0.9898 | 0.9522 | 0.052 |
-| pseudoabsence_hard | NeuralForest_Adaptive | 0.7211 | 0.5869 | 0.340 |
-| pseudoabsence_hard | NeuralForest_PUInformed | 0.6202 | 0.5968 | 0.370 |
-| pseudoabsence_hard | NeuralForest_PUNeural | 0.9670 | 0.9218 | 0.228 |
-| pseudoabsence_hard | NeuralForest_PUSafe | 0.9684 | 0.9200 | 0.477 |
-| pseudoabsence_hard | NeuralForest_PUStable | 0.7572 | 0.7362 | 0.901 |
-| pseudoabsence_hard | NeuralForest_PUStableTeacher | 0.9697 | 0.9060 | 0.906 |
-| pseudoabsence_hard | Voting_Heterogeneous | 0.7449 | 0.6469 | 0.981 |
+| presence_bg_1to5 | NeuralForest_PUSafe | 0.9881 | 0.9808 | 1.639 |
+| presence_bg_1to5 | NeuralForest_PUStable | 0.9851 | 0.9786 | 2.661 |
+| presence_bg_1to5 | NeuralForest_PUStableTeacher | 0.9851 | 0.9786 | 2.667 |
+| presence_bg_1to5 | Voting_Heterogeneous | 0.9735 | 0.9559 | 1.180 |
+| pseudoabsence_hard | Logistic | 0.9898 | 0.9522 | 0.056 |
+| pseudoabsence_hard | NeuralForest_Adaptive | 0.7211 | 0.5869 | 0.347 |
+| pseudoabsence_hard | NeuralForest_PUInformed | 0.6202 | 0.5968 | 0.373 |
+| pseudoabsence_hard | NeuralForest_PUNeural | 0.9670 | 0.9218 | 0.231 |
+| pseudoabsence_hard | NeuralForest_PUSafe | 0.9684 | 0.9200 | 0.478 |
+| pseudoabsence_hard | NeuralForest_PUStable | 0.7572 | 0.7362 | 0.896 |
+| pseudoabsence_hard | NeuralForest_PUStableTeacher | 0.9697 | 0.9060 | 0.901 |
+| pseudoabsence_hard | Voting_Heterogeneous | 0.7449 | 0.6469 | 1.007 |
 
 The native nnPU objective assumes representative observed-positive
 and unlabeled distributions and prespecified class-prior values.
