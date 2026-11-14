@@ -98,6 +98,9 @@ nf_po_boost_raw_scores <- function(object,newdata) {
 #' @param presences,background Training observations and availability.
 #' @param validation_presences,validation_background Optional disjoint
 #'   TRAINING-ONLY inner validation cohorts (ideally spatially blocked).
+#' @param refit_validation Refit the chosen stage count on the pooled
+#'   outer-training data (including the inner holdout) AFTER inner
+#'   model selection. Never use an outer evaluation/test fold here.
 #' @param background_weights Design weights for training availability.
 #' @param validation_background_weights Equivalent held-out weights.
 #' @param feature_mode "raw", "hidden" or "random" (negative control).
@@ -114,6 +117,7 @@ nf_po_boost_raw_scores <- function(object,newdata) {
 nf_po_gradient_forest <- function(presences,background,
    validation_presences=NULL,validation_background=NULL,
    background_weights=NULL,validation_background_weights=NULL,
+   refit_validation=TRUE,
    feature_mode=c("hidden","raw","random"),seed=42L,
    hidden=12L,epochs=75L,max_stages=4L,
    trees_per_stage=5L,max_depth=3L,min_leaf=8L,
@@ -146,6 +150,9 @@ nf_po_gradient_forest <- function(presences,background,
     stop("Invalid native IPP boosting controls")
   if(xor(is.null(validation_presences),is.null(validation_background)))
     stop("Supply both or neither of inner validation cohorts")
+  if(length(refit_validation)!=1L || is.na(refit_validation) ||
+     !is.logical(refit_validation))
+    stop("refit_validation must be TRUE or FALSE")
   external<-!is.null(validation_presences)
   if(external) {
     if(!identical(colnames(validation_presences),colnames(presences)) ||
@@ -223,14 +230,24 @@ nf_po_gradient_forest <- function(presences,background,
   }
   history$selected<-history$stage==chosen
   selection_seconds<-proc.time()[["elapsed"]]-start
-  # Inner validation outcomes do not train the final IPP model when
-  # external; random internal validation is pooled only AFTER the
-  # number of stages is fixed.
-  final<-if(external)partial else {
-    if(chosen>0L)fit_one(presences,background,
-      background_weights,as.integer(seed+989L),chosen)
-    else list(teacher=nf_po_forest(presences,background,
-             background_weights=background_weights,mode="neural",
+  # Once stages are chosen strictly from the INNER holdout, refit on
+  # all OUTER TRAINING rows. An externally supplied audit should be
+  # pooled only when explicitly marked as an inner training-only fold.
+  # There is NO inference about which rows belong to a final test set.
+  finalp<-if(external && refit_validation)
+    rbind(as.data.frame(presences),
+          as.data.frame(validation_presences)) else presences
+  finalb<-if(external && refit_validation)
+    rbind(as.data.frame(background),
+          as.data.frame(validation_background)) else background
+  finalw<-if(external && refit_validation)
+    c(background_weights,validation_background_weights)
+    else background_weights
+  final<-if(external && !refit_validation)partial else {
+    if(chosen>0L)fit_one(finalp,finalb,
+      finalw,as.integer(seed+989L),chosen)
+    else list(teacher=nf_po_forest(finalp,finalb,
+             background_weights=finalw,mode="neural",
              seed=as.integer(seed+989L),hidden=hidden,epochs=epochs),
               native=list(trees=list(),feature_model=NULL))
   }
@@ -242,17 +259,17 @@ nf_po_gradient_forest <- function(presences,background,
     step_size=step_size,selected_stages=chosen,
     selected_mode=feature_mode,
     validation=history,selection_rule=selection_rule,
-    n_presence=np,n_background=nb,
+    n_presence=nrow(finalp),n_background=nrow(finalb),
+    validation_refitted=(external&&refit_validation),
     score_definition="point_process_relative_intensity",
     training=list(selection_seconds=selection_seconds,
        total_seconds=proc.time()[["elapsed"]]-start))
   class(model)<-"nf_po_gradient_forest"
-  Xbg<-nf_encoding(background,fit=model$teacher$encoding)$X
-  # For external validation the final model was trained on its own
-  # training records (which equal the supplied training data).
-  logscore<-nf_po_boost_raw_scores(model,background)
+  # Final relative intensity normalizer is fitted on TRAINING
+  # availability only, not on the outer test region or any oracle.
+  logscore<-nf_po_boost_raw_scores(model,finalb)
   model$reference_log_mean_intensity<-nf_po_logmeanexp(
-           logscore,background_weights)
+           logscore,finalw)
   model
 }
 
