@@ -67,15 +67,29 @@ test_that("raw vs hidden candidates have identical frozen nnPU teacher", {
       epochs=7L,n_trees=28L,max_depth=4L)
   raw <- do.call(nf_pu_feature_forest,c(args,list(mode="raw")))
   hidden <- do.call(nf_pu_feature_forest,c(args,list(mode="hidden")))
+  random <- do.call(nf_pu_feature_forest,c(args,list(mode="random")))
   expect_false(is.null(raw$forest))
   expect_false(is.null(hidden$forest))
+  expect_false(is.null(random$forest))
   expect_identical(raw$feature_diagnostics$latent_columns,0L)
   expect_gte(hidden$feature_diagnostics$latent_columns,2L)
   sample <- x[1:24,,drop=FALSE]
   baseline1 <- predict(nf_pu_matched_teacher(raw),sample,type="prob")
   baseline2 <- predict(nf_pu_matched_teacher(hidden),sample,type="prob")
   expect_equal(baseline1,baseline2,tolerance=1e-12)
-  for(m in list(raw,hidden)) {
+  expect_equal(baseline1,
+      predict(nf_pu_matched_teacher(random),sample,type="prob"),
+      tolerance=1e-12)
+  expect_identical(random$feature_diagnostics$latent_columns,
+                   hidden$feature_diagnostics$latent_columns)
+  expect_true(!isTRUE(random$feature_spec$random$trained))
+  expect_equal(random$feature_spec$random$W,
+               NeuralForest:::nf_pu_cpp_random_projection(
+                 ncol(random$feature_spec$random$W),
+                 ncol(random$feature_spec$random$W),
+                 9412L+19051L)$W,
+               tolerance=1e-12)
+  for(m in list(raw,hidden,random)) {
     p <- predict(m,sample,type="prob")
     expect_equal(dim(p),c(24L,2L))
     expect_true(all(is.finite(p)))
