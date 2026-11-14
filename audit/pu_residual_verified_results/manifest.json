@@ -1,0 +1,29 @@
+{
+  "scenarios": [
+    "interaction_xor",
+    "linear",
+    "null"
+  ],
+  "regimes": [
+    "SCAR",
+    "SAR"
+  ],
+  "seeds": [
+    3509,
+    3517,
+    3527,
+    3539,
+    3547
+  ],
+  "train": 820,
+  "verified_audit": 320,
+  "test": 420,
+  "shift": 420,
+  "total_predictions": 210,
+  "independent_training_fits": 150,
+  "verified_labels_train_neural_or_tree": false,
+  "test_labels_used_for_selection": false,
+  "is_synthetic": true,
+  "external_clinical_validation": false,
+  "version_sha": "92beaaa0e211c23e69ad628dab2a16d42c3f8647"
+}

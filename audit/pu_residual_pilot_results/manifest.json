@@ -1,0 +1,20 @@
+{
+  "sources": [
+    "Diabetes_Progression180",
+    "Digits_Eight"
+  ],
+  "seeds": [
+    2717,
+    2791
+  ],
+  "regimes": [
+    "SCAR",
+    "SAR"
+  ],
+  "rows": 48,
+  "trained_fits": 40,
+  "residual_models_are_shared_fit": true,
+  "independent_external_sites": false,
+  "previous_test_families_inspected": true,
+  "run_sha": "92beaaa0e211c23e69ad628dab2a16d42c3f8647"
+}
