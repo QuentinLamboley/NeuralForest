@@ -38,17 +38,30 @@ jobs:
           R CMD INSTALL .
       - name: Validate C++ PU gradients and exact teacher fallback
         run: Rscript -e 'library(NeuralForest); testthat::test_file("tests/testthat/test-pu-residual.R")'
-      - name: Run exploratory paired pilot
+      - name: Validate all experimental pilot scripts
+        run: |
+          python -m compileall -q benchmark/pu_residual_pilot.py benchmark/pu_residual_verified.py
+          Rscript -e 'parse(file="benchmark/pu_residual_verified_r.R")' >/dev/null
+      - name: Run exploratory paired pilot and controlled stress suite
         env:
           OPENBLAS_NUM_THREADS: '1'
           OMP_NUM_THREADS: '1'
           MKL_NUM_THREADS: '1'
           NUMEXPR_NUM_THREADS: '1'
           PYTHONHASHSEED: '0'
-        run: python benchmark/pu_residual_pilot.py
+        run: |
+          python benchmark/pu_residual_pilot.py
+          python benchmark/pu_residual_verified.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: pu-residual-exploratory-pilot
           path: audit/pu_residual_pilot_results/
+          if-no-files-found: warn
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pu-residual-controlled-verified
+          path: audit/pu_residual_verified_results/
           if-no-files-found: warn
