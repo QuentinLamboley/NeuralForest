@@ -51,6 +51,28 @@ nf_pu_stable_risks <- function(y,p,priors,folds) {
   },numeric(1))
 }
 
+# Per-prior, per-fold risks avoid hiding damage to one assumed prevalence.
+nf_pu_stable_risk_grid <- function(y,p,priors,folds) {
+  matrix(unlist(lapply(folds,function(rows)
+    vapply(priors,function(prior)
+      nf_pu_risk(y[rows],p[rows],prior),numeric(1)))),
+    nrow=length(priors),ncol=length(folds))
+}
+
+# Fit the monotone mapping on one holdout half and score on the other.
+nf_pu_rank_oof <- function(teacher,forest,folds,student_fraction,cap) {
+  out <- rep(NA_real_,length(teacher))
+  for(rows in folds) {
+    calibration <- setdiff(seq_along(teacher),rows)
+    if(length(calibration)<2L)stop("Rank calibration needs disjoint halves")
+    map <- nf_pu_cpp_rank_fit(teacher[calibration],forest[calibration])
+    out[rows] <- nf_pu_cpp_rank_apply(
+      teacher[rows],map,student_fraction,cap)
+  }
+  if(any(!is.finite(out)))stop("Incomplete rank-preserving holdout")
+  out
+}
+
 #' Stability-constrained PU-guided random forest
 #'
 #' Two independent C++ neural nnPU fits per prior assess sensitivity to
@@ -85,7 +107,8 @@ nf_pu_stable_forest <- function(
   x,y,priors=c(.12,.25,.40),seed=42L,hidden=20L,
   epochs=60L,n_trees=130L,min_gain=.004,
   strengths=c(.25,.55),min_ess=.96,uncertainty_limit=.35,
-  teacher_restarts=2L,fidelity_cap=NULL,min_rank_correlation=0) {
+  teacher_restarts=2L,fidelity_cap=NULL,min_rank_correlation=0,
+  rank_lock=FALSE) {
   if(!is.numeric(y) && !is.factor(y))
     stop("PU labels must be numeric 0/1 or factor 0/1")
   raw_y <- as.character(y)
@@ -116,6 +139,8 @@ nf_pu_stable_forest <- function(
      length(min_rank_correlation)!=1L||
        !is.finite(min_rank_correlation)||
        min_rank_correlation<0||min_rank_correlation>1||
+     length(rank_lock)!=1L||!is.logical(rank_lock)||is.na(rank_lock)||
+     (rank_lock && is.null(fidelity_cap))||
      (!is.null(fidelity_cap) &&
        (length(fidelity_cap)!=1L||!is.finite(fidelity_cap)||
         fidelity_cap<=0||fidelity_cap>=1)))
@@ -138,8 +163,9 @@ nf_pu_stable_forest <- function(
     folds <- list(h$train,h$validation)
   } else folds <- list(seq_along(yv))
   base_risk <- nf_pu_stable_risks(yv,teacher_val,priors,folds)
+  base_grid <- nf_pu_stable_risk_grid(yv,teacher_val,priors,folds)
   selected <- list(name="neural_fallback",strength=NA_real_,
-                   blend=1,risks=base_risk)
+                   blend=1,risks=base_risk,rank_map=NULL)
   history <- data.frame(
     candidate="neural_fallback",strength=NA_real_,blend=1,
     worst_risk=max(base_risk),worst_gain=0,
@@ -148,6 +174,16 @@ nf_pu_stable_forest <- function(
     training,yt,priors,hidden,epochs,seed+119L,
     restarts=teacher_restarts) else NULL
   consider <- function(name,p,strength,blend) {
+    mapping <- NULL
+    if(rank_lock) {
+      # Distill the original forest probabilities, not their numerical
+      # reconstruction from a convex mixture (which could leave [0,1]).
+      mapping <- nf_pu_cpp_rank_fit(teacher_val,p)
+      p <- nf_pu_rank_oof(teacher_val,p,folds,
+                          1-blend,fidelity_cap)
+    } else if(blend>0) {
+      p <- blend*teacher_val+(1-blend)*p
+    }
     # The fidelity-limited mode only judges predictions it could actually
     # deploy. Do not select on an unconstrained validation prediction and
     # clip only at inference.
@@ -155,6 +191,7 @@ nf_pu_stable_forest <- function(
       p <- teacher_val+pmax(-fidelity_cap,
                pmin(fidelity_cap,p-teacher_val))
     risks <- nf_pu_stable_risks(yv,p,priors,folds)
+    risk_grid <- nf_pu_stable_risk_grid(yv,p,priors,folds)
     correlations <- vapply(folds,function(rows) {
       if(min_rank_correlation<=0)return(1.0)
       if(stats::sd(p[rows])<1e-12 ||
@@ -164,7 +201,8 @@ nf_pu_stable_forest <- function(
     },numeric(1))
     improvement <- base_risk-risks
     eligible <- use_two_halves &&
-      all(is.finite(risks)) && all(improvement>min_gain) &&
+      all(is.finite(risk_grid)) &&
+      all(base_grid-risk_grid>min_gain) &&
       all(is.finite(correlations)) &&
       all(correlations>=min_rank_correlation)
     history <<- rbind(history,data.frame(
@@ -173,7 +211,7 @@ nf_pu_stable_forest <- function(
       eligible=eligible,stringsAsFactors=FALSE))
     if(eligible && max(risks)<max(selected$risks)) {
       selected <<- list(name=name,strength=strength,
-                        blend=blend,risks=risks)
+                        blend=blend,risks=risks,rank_map=mapping)
     }
   }
   if(use_two_halves) {
@@ -192,7 +230,7 @@ nf_pu_stable_forest <- function(
       label <- if(strength==0) "plain" else sprintf("guided_%g",strength)
       consider(label,fp,strength,0)
       consider(paste0(label,"_blend50"),
-               .5*teacher_val+.5*fp,strength,.5)
+               fp,strength,.5)
     }
   }
   history$chosen <- history$candidate==selected$name
@@ -213,7 +251,7 @@ nf_pu_stable_forest <- function(
   diagnostics <- list(ess_fraction=1,guided_fraction=0,
                       mean_confidence=0,shrink_factor=1,
                       crossfit_used=!is.null(crossfit))
-  if(is.finite(selected$strength)) {
+  if(is.finite(selected$strength) && !rank_lock) {
     if(selected$strength>0) {
       posterior <- nf_pu_stable_oof(fullX,y,priors,hidden,epochs,
                                    seed+14027L,restarts=teacher_restarts)
@@ -243,6 +281,7 @@ nf_pu_stable_forest <- function(
     selected_strength=selected$strength,
     fidelity_cap=fidelity_cap,
     min_rank_correlation=min_rank_correlation,
+    rank_lock=rank_lock,rank_map=selected$rank_map,
     selection_history=history,stability_diagnostics=diagnostics,
     hidden=hidden,epochs=epochs,n_trees=n_trees,
     timings=list(selection_seconds=select_time,
@@ -261,6 +300,10 @@ nf_pu_stable_forest <- function(
 #' concordance separately on two validation halves. This bound limits
 #' probability drift but CANNOT guarantee Boyce, AUC or AP non-inferiority,
 #' especially for observations whose teacher scores are nearly tied.
+#' A selected native C++ rank map is a strictly increasing function
+#' of teacher probability, so it cannot invert ranking on unseen cohorts.
+#' It can affect calibration but cannot improve rank-based discrimination.
+#' Cross-fitted assessment uses opposite halves of the PU holdout.
 #' If no candidate passes the gate, the fitted model reproduces the
 #' standalone `nf_pu_forest(..., mode="neural")` exactly.
 #' @inheritParams nf_pu_stable_forest
@@ -279,7 +322,7 @@ nf_pu_safe_forest <- function(
     epochs=epochs,n_trees=n_trees,min_gain=min_gain,
     strengths=strengths,min_ess=min_ess,
     uncertainty_limit=uncertainty_limit,
-    teacher_restarts=1L,
+    teacher_restarts=1L,rank_lock=TRUE,
     fidelity_cap=fidelity_cap,
     min_rank_correlation=min_rank_correlation)
 }

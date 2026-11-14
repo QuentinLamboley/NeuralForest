@@ -171,7 +171,11 @@ predict.nf_pu_forest <- function(object,newdata,
   type <- match.arg(type)
   X <- nf_encoding(newdata,fit=object$encoding)$X
   p <- nf_pu_ensemble_predict(object$networks,X)
-  if(!is.null(object$forest)) {
+  if(!is.null(object$rank_map)) {
+    # Batch-invariant, strictly monotone teacher calibration in native C++.
+    p <- nf_pu_cpp_rank_apply(
+      p,object$rank_map,1-object$alpha,object$fidelity_cap)
+  } else if(!is.null(object$forest)) {
     pf <- nf_pu_forest_predict(object$forest,X)
     candidate <- object$alpha*p+(1-object$alpha)*pf
     if(!is.null(object$fidelity_cap)) {

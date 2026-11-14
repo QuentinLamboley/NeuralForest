@@ -353,3 +353,18 @@ reusing the same scenario seeds cannot establish
 independent confirmation, and benchmark success alone
 cannot justify deploying on a clinical patient or
 ecological suitability map.
+
+
+### PU rank-stability safeguard (v0.9.1)
+
+The existing NeuralForest_PUSafe competitor now assesses a forest-distilled
+monotone C++ teacher calibration with two disjoint validation halves. When
+a candidate wins the per-prior PU-risk gate, the deployed score remains a
+strictly increasing, batch-independent function of the nnPU teacher score,
+with no more than 0.02 absolute probability drift. This cannot improve
+or degrade AUC, AP, or rank-Boyce discrimination apart from numerical ties.
+Proper scores and the non-rank-invariant continuous Boyce can still change.
+NeuralForest_PUStable remains a less constrained forest capable of altering
+rankings, now guarded on every prior separately. Both are evaluated under
+the same RF, subsampled RF, boosting, voting and stacking comparisons;
+model selection, final training and both test-cohort inference are timed.

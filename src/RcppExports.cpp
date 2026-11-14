@@ -84,7 +84,24 @@ RcppExport SEXP _NeuralForest_nf_pu_cpp_stable_weights(
     as<double>(uncertainty),as<double>(ess)));
   END_RCPP
 }
+List nf_pu_cpp_rank_fit(NumericVector,NumericVector);
+NumericVector nf_pu_cpp_rank_apply(NumericVector,List,double,double);
+RcppExport SEXP _NeuralForest_nf_pu_cpp_rank_fit(SEXP teacher,SEXP forest) {
+  BEGIN_RCPP
+  return wrap(nf_pu_cpp_rank_fit(as<NumericVector>(teacher),
+                                as<NumericVector>(forest)));
+  END_RCPP
+}
+RcppExport SEXP _NeuralForest_nf_pu_cpp_rank_apply(SEXP teacher,SEXP map,
+                                                    SEXP blend,SEXP cap) {
+  BEGIN_RCPP
+  return wrap(nf_pu_cpp_rank_apply(as<NumericVector>(teacher),
+    as<List>(map),as<double>(blend),as<double>(cap)));
+  END_RCPP
+}
 static const R_CallMethodDef CallEntries[] = {
+  {"_NeuralForest_nf_pu_cpp_rank_fit", (DL_FUNC) &_NeuralForest_nf_pu_cpp_rank_fit, 2},
+  {"_NeuralForest_nf_pu_cpp_rank_apply", (DL_FUNC) &_NeuralForest_nf_pu_cpp_rank_apply, 4},
   {"_NeuralForest_nf_pu_cpp_stable_weights", (DL_FUNC) &_NeuralForest_nf_pu_cpp_stable_weights, 6},
   {"_NeuralForest_nf_pu_cpp_fit", (DL_FUNC) &_NeuralForest_nf_pu_cpp_fit, 10},
   {"_NeuralForest_nf_pu_cpp_predict", (DL_FUNC) &_NeuralForest_nf_pu_cpp_predict, 2},

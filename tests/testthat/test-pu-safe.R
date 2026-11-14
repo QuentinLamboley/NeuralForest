@@ -39,3 +39,37 @@ test_that("fidelity cap is enforced for all future predictions", {
   expect_error(nf_pu_safe_forest(x,y,min_rank_correlation=1.2),
                "Invalid stable PU model controls")
 })
+
+
+test_that("native rank mapping is monotone and batch invariant", {
+  teacher <- seq(.003,.997,length.out=500L)
+  forest <- rev(teacher)^2
+  mapping <- NeuralForest:::nf_pu_cpp_rank_fit(teacher,forest)
+  for(fraction in c(0,.3,.5,1)) {
+    p <- NeuralForest:::nf_pu_cpp_rank_apply(teacher,mapping,fraction,.02)
+    expect_true(all(diff(p)>0))
+    expect_identical(order(p),order(teacher))
+    expect_lte(max(abs(p-teacher)),.020000001)
+    expect_true(all(p>0 & p<1))
+  }
+  rows <- c(301L,2L,499L,3L)
+  allp <- NeuralForest:::nf_pu_cpp_rank_apply(teacher,mapping,.75,.02)
+  part <- NeuralForest:::nf_pu_cpp_rank_apply(teacher[rows],mapping,.75,.02)
+  expect_equal(allp[rows],part,tolerance=1e-14)
+  expect_error(NeuralForest:::nf_pu_cpp_rank_fit(teacher,c(forest[-1],NA)),
+               "finite probability")
+  expect_error(NeuralForest:::nf_pu_cpp_rank_apply(teacher,mapping,1,1.1),
+               "Invalid")
+})
+
+test_that("safe model enables rank lock and retains exact fallback", {
+  set.seed(2801)
+  x <- data.frame(a=rnorm(320),b=rnorm(320))
+  y <- c(rep(1L,150L),rep(0L,170L))
+  model <- nf_pu_safe_forest(x,y,seed=2801L,
+                             hidden=8L,epochs=9L,n_trees=12L,
+                             min_gain=1e6)
+  expect_true(model$rank_lock)
+  expect_null(model$forest)
+  expect_null(model$rank_map)
+})

@@ -595,3 +595,17 @@ or clinical site remains necessary to support an external
 predictive claim. This strategy prevents unbounded
 probability deviation but cannot guarantee preserving
 a ranking metric among nearly tied observations.
+
+
+## v0.9.1 monotone PU safeguard
+
+The original 0.02 score fidelity cap and high Spearman concordance did not
+guarantee preservation of near-tied neural predictions. A strictly increasing
+native C++ logit mapping is now distilled from each candidate forest, evaluated
+with swapped PU validation halves, and fitted for deployment using only the
+original PU holdout. The map is a function of the teacher prediction only,
+not the composition of test batches. It guarantees no order inversions,
+and deliberately cannot improve AUC or AP. Empirical PU gate decisions now
+require noninferiority for *every prior on each half*, instead of only for
+the maximum aggregated risk. Calibration and magnitude-sensitive metrics
+remain unprotected; SAR, SNAR and misspecified prevalence remain limitations.
