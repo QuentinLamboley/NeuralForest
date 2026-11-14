@@ -1,0 +1,14 @@
+{
+  "n_scenarios": 3,
+  "n_spatial_cases": 72,
+  "n_methods": 9,
+  "n_predictions": 648,
+  "n_training_fits": 576,
+  "note": "Exact teacher prediction shares the raw native fit; R modes are separate independent fits.",
+  "spatially_disjoint_inner_and_outer": true,
+  "virtual_species_oracle_never_in_training": true,
+  "background_can_contain_true_presences": true,
+  "nested_stage_selection_univariate_without_hyperparameter_tuning": true,
+  "genuine_real_world_external_validation": false,
+  "experiment_version_sha": "707caa86178637638f932974344cf225e16d9868"
+}
