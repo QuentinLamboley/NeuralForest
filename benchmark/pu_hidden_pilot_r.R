@@ -32,14 +32,20 @@ train_one <- function(kind) {
 }
 raw <- train_one("raw")
 latent <- train_one("hidden")
+random <- train_one("random")
 teacher <- nf_pu_matched_teacher(raw$fit)
 matched <- nf_pu_matched_teacher(latent$fit)
+matched_random <- nf_pu_matched_teacher(random$fit)
 test_teach <- as.numeric(predict(teacher,X(test),type="prob")[,"1"])
 test_teach2 <- as.numeric(predict(matched,X(test),type="prob")[,"1"])
+test_random <- as.numeric(predict(matched_random,X(test),type="prob")[,"1"])
 shift_teach <- as.numeric(predict(teacher,X(shift),type="prob")[,"1"])
 shift_teach2 <- as.numeric(predict(matched,X(shift),type="prob")[,"1"])
+shift_random <- as.numeric(predict(matched_random,X(shift),type="prob")[,"1"])
 if(max(abs(test_teach-test_teach2))>1e-12 ||
-   max(abs(shift_teach-shift_teach2))>1e-12)
+   max(abs(shift_teach-shift_teach2))>1e-12 ||
+   max(abs(test_teach-test_random))>1e-12 ||
+   max(abs(shift_teach-shift_random))>1e-12)
   stop("Ablation invalid: raw and augmented forests did not have identical neural teachers")
 record <- function(name,model,train_seconds,verification_seconds=0,
                    verified="not_used") {
@@ -60,9 +66,12 @@ record <- function(name,model,train_seconds,verification_seconds=0,
 rows <- list(
   record("NeuralForest_PUHiddenTeacher",teacher,raw$training),
   record("NeuralForest_PUHiddenRawCandidate",raw$fit,raw$training),
+  record("NeuralForest_PUHiddenRandomCandidate",random$fit,random$training),
   record("NeuralForest_PUHiddenLatentCandidate",latent$fit,latent$training),
   record("NeuralForest_PUHiddenRawVerified",raw$gated,
      raw$training,raw$verified,raw$gated$verified_gate$selected),
+  record("NeuralForest_PUHiddenRandomVerified",random$gated,
+     random$training,random$verified,random$gated$verified_gate$selected),
   record("NeuralForest_PUHiddenLatentVerified",latent$gated,
      latent$training,latent$verified,latent$gated$verified_gate$selected)
 )
