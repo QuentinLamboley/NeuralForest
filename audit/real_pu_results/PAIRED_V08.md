@@ -14,7 +14,7 @@ because it has no old counterpart.
 | NeuralForest_Differentiable | +0.000000 |
 | NeuralForest_PUInformed | +0.000000 |
 | NeuralForest_PUNeural | +0.000000 |
-| NeuralForest_PUStable | +0.000000 |
+| NeuralForest_PUStable | -0.000939 |
 | NeuralForest_SubSample50_Informed | +0.000000 |
 | NeuralForest_UndersampledInformed | +0.000000 |
 | NeuralForest_UndersampledPlain | +0.000000 |
