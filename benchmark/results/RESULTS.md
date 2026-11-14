@@ -8,8 +8,8 @@ Prediction time includes evaluation inference on the held-out set.
 The three stages are also available independently in summary.csv.
 
 The experiment covers 19 scenarios, ten seeds and 31 standard methods
-plus two PU-specific methods in three presence/background scenarios.
-Successful runs: 5950 / 5950.
+plus three PU-specific methods in three presence/background scenarios.
+Successful runs: 5980 / 5980.
 Seeds 401 and 503 remain confirmation seeds from the v0.6 audit.
 A second shifted simulator population is evaluated independently
 without using any of its labels during fitting or model selection.
@@ -19,25 +19,25 @@ This is synthetic transfer validation, not real-world external validation.
 
 | Scenario | Metric | Top three (ten-seed mean) | NeuralForest adaptatif | Rank | Selection (s) | Final fit (s) | Prediction (s) |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
-| correlated_30 | auc | Voting_Heterogeneous 0.796, GradientBoosting 0.795, Voting_RF_CatBoost 0.794 | 0.790 | 8 | 0.51 | 0.21 | 0.040 |
-| distinct_0 | auc | Voting_RF_ExtraTrees 0.994, ExtraTrees 0.993, Voting_Heterogeneous 0.993 | 0.992 | 14 | 0.26 | 0.05 | 0.017 |
-| distribution_shift | auc | Voting_Heterogeneous 0.692, ExtraTrees 0.691, Voting_RF_ExtraTrees 0.686 | 0.683 | 6 | 0.37 | 0.10 | 0.030 |
-| identical_100 | logloss | Dummy 0.694, NeuralForest_Differentiable 0.694, Stacking_RF_XGB 0.694 | 0.695 | 5 | 0.25 | 0.08 | 0.024 |
-| intermediate_45 | auc | CatBoost 0.909, Stacking_Boosting 0.908, Voting_RF_CatBoost 0.907 | 0.901 | 12 | 0.29 | 0.07 | 0.021 |
-| label_noise_20pct | auc | Voting_Heterogeneous 0.701, CatBoost 0.696, NeuralForest_Differentiable 0.696 | 0.696 | 5 | 0.35 | 0.13 | 0.034 |
-| large_n | auc | CatBoost 0.779, Stacking_Boosting 0.777, Voting_RF_CatBoost 0.776 | 0.772 | 9 | 1.09 | 0.43 | 0.049 |
-| missing_15pct | auc | Stacking_Boosting 0.780, Voting_Heterogeneous 0.779, CatBoost 0.779 | 0.773 | 8 | 0.40 | 0.14 | 0.032 |
-| noise_50 | auc | GradientBoosting 0.786, AdaBoost 0.782, Voting_Boosting 0.781 | 0.773 | 19 | 0.61 | 0.25 | 0.045 |
-| nonlinear_xor | f1 | Voting_RF_CatBoost 0.997, GradientBoosting 0.997, CatBoost 0.997 | 0.983 | 15 | 0.34 | 0.13 | 0.031 |
-| overlap_80 | auc | Voting_Heterogeneous 0.675, AdaBoost 0.671, CatBoost 0.670 | 0.666 | 6 | 0.27 | 0.08 | 0.022 |
-| presence_bg_1to1 | boyce | NeuralForest_SubSample50_Informed 0.995, Logistic 0.995, Voting_Heterogeneous 0.993 | 0.993 | 4 | 0.19 | 0.06 | 0.040 |
-| presence_bg_1to5 | boyce | NeuralForest_PUInformed 0.990, NeuralForest_Differentiable 0.988, NeuralForest_UndersampledInformed 0.988 | 0.986 | 6 | 0.51 | 0.20 | 0.045 |
-| pseudoabsence_hard | boyce | Logistic 0.990, NeuralForest_PUNeural 0.967, AdaBoost 0.751 | 0.721 | 5 | 0.19 | 0.06 | 0.036 |
-| rare_10pct | pr_auc | Voting_Heterogeneous 0.521, Logistic 0.508, ExtraTrees 0.505 | 0.502 | 4 | 0.33 | 0.12 | 0.030 |
-| rare_1pct | pr_auc | NeuralForest_Adaptive 0.183, NeuralForest_Calibrated 0.183, Voting_Heterogeneous 0.178 | 0.183 | 1 | 1.22 | 0.61 | 0.029 |
-| rare_3pct | pr_auc | Voting_Heterogeneous 0.290, Logistic 0.284, ExtraTrees 0.272 | 0.272 | 4 | 0.60 | 0.25 | 0.038 |
-| similar_97 | brier | Dummy 0.250, Stacking_RF_XGB 0.251, Stacking_Boosting 0.251 | 0.252 | 6 | 0.25 | 0.08 | 0.024 |
-| small_n | balanced_accuracy | Voting_Heterogeneous 0.661, NeuralForest_UndersampledPlain 0.659, AdaBoost 0.657 | 0.650 | 15 | 0.11 | 0.03 | 0.017 |
+| correlated_30 | auc | Voting_Heterogeneous 0.796, GradientBoosting 0.795, Voting_RF_CatBoost 0.794 | 0.790 | 8 | 0.51 | 0.21 | 0.041 |
+| distinct_0 | auc | Voting_RF_ExtraTrees 0.994, ExtraTrees 0.993, Voting_Heterogeneous 0.993 | 0.992 | 14 | 0.30 | 0.06 | 0.020 |
+| distribution_shift | auc | Voting_Heterogeneous 0.692, ExtraTrees 0.691, Voting_RF_ExtraTrees 0.686 | 0.683 | 6 | 0.38 | 0.10 | 0.031 |
+| identical_100 | logloss | Dummy 0.694, NeuralForest_Differentiable 0.694, Stacking_RF_XGB 0.694 | 0.695 | 5 | 0.28 | 0.09 | 0.027 |
+| intermediate_45 | auc | CatBoost 0.909, Stacking_Boosting 0.908, Voting_RF_CatBoost 0.907 | 0.901 | 12 | 0.34 | 0.08 | 0.025 |
+| label_noise_20pct | auc | Voting_Heterogeneous 0.701, CatBoost 0.696, NeuralForest_Differentiable 0.696 | 0.696 | 5 | 0.49 | 0.17 | 0.050 |
+| large_n | auc | CatBoost 0.779, Stacking_Boosting 0.777, Voting_RF_CatBoost 0.776 | 0.772 | 9 | 0.97 | 0.33 | 0.042 |
+| missing_15pct | auc | Stacking_Boosting 0.780, Voting_Heterogeneous 0.779, CatBoost 0.779 | 0.773 | 8 | 0.57 | 0.18 | 0.047 |
+| noise_50 | auc | GradientBoosting 0.786, AdaBoost 0.782, Voting_Boosting 0.781 | 0.773 | 19 | 0.62 | 0.25 | 0.046 |
+| nonlinear_xor | f1 | Voting_RF_CatBoost 0.997, GradientBoosting 0.997, CatBoost 0.997 | 0.983 | 15 | 0.34 | 0.13 | 0.032 |
+| overlap_80 | auc | Voting_Heterogeneous 0.675, AdaBoost 0.671, CatBoost 0.670 | 0.666 | 6 | 0.31 | 0.09 | 0.026 |
+| presence_bg_1to1 | boyce | NeuralForest_SubSample50_Informed 0.995, Logistic 0.995, Voting_Heterogeneous 0.993 | 0.993 | 4 | 0.23 | 0.06 | 0.045 |
+| presence_bg_1to5 | boyce | NeuralForest_PUInformed 0.990, NeuralForest_Differentiable 0.988, NeuralForest_UndersampledInformed 0.988 | 0.986 | 6 | 0.61 | 0.23 | 0.052 |
+| pseudoabsence_hard | boyce | Logistic 0.990, NeuralForest_PUNeural 0.967, AdaBoost 0.751 | 0.721 | 5 | 0.23 | 0.06 | 0.042 |
+| rare_10pct | pr_auc | Voting_Heterogeneous 0.521, Logistic 0.508, ExtraTrees 0.505 | 0.502 | 4 | 0.27 | 0.09 | 0.024 |
+| rare_1pct | pr_auc | NeuralForest_Adaptive 0.183, NeuralForest_Calibrated 0.183, Voting_Heterogeneous 0.178 | 0.183 | 1 | 1.66 | 0.78 | 0.043 |
+| rare_3pct | pr_auc | Voting_Heterogeneous 0.290, Logistic 0.284, ExtraTrees 0.272 | 0.272 | 4 | 0.50 | 0.20 | 0.032 |
+| similar_97 | brier | Dummy 0.250, Stacking_RF_XGB 0.251, Stacking_Boosting 0.251 | 0.252 | 6 | 0.28 | 0.09 | 0.027 |
+| small_n | balanced_accuracy | Voting_Heterogeneous 0.661, NeuralForest_UndersampledPlain 0.659, AdaBoost 0.657 | 0.650 | 15 | 0.09 | 0.02 | 0.014 |
 
 ## Interpretation
 
@@ -80,6 +80,9 @@ on held-out test sets and were not used to select candidates.
 - METRICS_REPORT.md: rankings across fifteen independent test metrics
 - external_validation.csv: out-of-distribution shifted cohort scores
 - EXTERNAL_VALIDATION.md: shifted-cohort method comparisons
+- PU_STABILITY.md: cross-fitted uncertainty-gating decisions
+- pu_stability_choices.csv: every selected sampling strategy
+- paired_v07_comparison.csv: same-seed reference against v0.7
 - all_metric_ranks.csv, metric_winners.csv: all metric rankings
 - ensemble_comparison.csv: voted and stacked ensemble comparison
 - paired_multi_metrics.csv: paired differences and 95% intervals

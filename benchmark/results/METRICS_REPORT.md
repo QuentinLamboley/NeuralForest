@@ -20,17 +20,17 @@ tests and do not establish universal algorithm dominance.
 | --- | --- | ---: |
 | roc_auc | Voting_Heterogeneous | 3.42 |
 | pr_auc | Voting_Heterogeneous | 2.11 |
-| balanced_accuracy | Voting_Heterogeneous | 6.32 |
-| f1 | Voting_RF_CatBoost | 8.68 |
-| mcc | Voting_Heterogeneous | 4.68 |
-| precision | Voting_Heterogeneous | 3.84 |
-| recall | GradientBoosting | 8.79 |
-| specificity | Voting_Heterogeneous | 6.84 |
-| brier | Voting_Heterogeneous | 6.11 |
-| logloss | Voting_Heterogeneous | 7.05 |
+| balanced_accuracy | Voting_Heterogeneous | 6.37 |
+| f1 | Voting_Heterogeneous | 8.79 |
+| mcc | Voting_Heterogeneous | 4.74 |
+| precision | Voting_Heterogeneous | 3.95 |
+| recall | GradientBoosting | 8.84 |
+| specificity | Voting_Heterogeneous | 6.95 |
+| brier | Voting_Heterogeneous | 6.21 |
+| logloss | Voting_Heterogeneous | 7.16 |
 | boyce | NeuralForest_Calibrated | 6.79 |
 | boyce_rank | NeuralForest_Calibrated | 8.42 |
-| ece | Dummy | 3.53 |
+| ece | Dummy | 3.63 |
 | precision_at_10pct | Voting_Heterogeneous | 2.37 |
 | recall_at_10pct | Voting_Heterogeneous | 2.37 |
 

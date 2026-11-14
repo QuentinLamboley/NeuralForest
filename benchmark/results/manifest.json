@@ -54,6 +54,7 @@
     "NeuralForest_Differentiable",
     "NeuralForest_PUInformed",
     "NeuralForest_PUNeural",
+    "NeuralForest_PUStable",
     "NeuralForest_SubSample50_Informed",
     "NeuralForest_UndersampledInformed",
     "NeuralForest_UndersampledPlain",
@@ -73,12 +74,12 @@
     "XGBoost",
     "ranger"
   ],
-  "rows": 5950,
-  "successes": 5950,
+  "rows": 5980,
+  "successes": 5980,
   "failures": [],
   "paired_old_rows": 480,
   "multi_metric_report": {
-    "rows": 8925,
+    "rows": 8970,
     "pair_rows": 4845,
     "metrics": 15,
     "ensembles": 6
