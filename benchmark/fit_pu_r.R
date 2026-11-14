@@ -48,6 +48,6 @@ for(kind in c("neural","informed","stable")) {
          if(is.null(fitted$stability_diagnostics)) NA_real_ else
            fitted$stability_diagnostics$ess_fraction,
          if(is.null(fitted$stability_diagnostics)) "legacy" else
-           fitted$stability_diagnostics$crossfit_used)
+           fitted$stability_diagnostics$crossfit_used))
 }
 jsonlite::write_json(list(models=models),file,pretty=TRUE,auto_unbox=TRUE,digits=12)
