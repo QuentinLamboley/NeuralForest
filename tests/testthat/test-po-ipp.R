@@ -45,7 +45,7 @@ test_that("raw, trained neural, and untrained random forests all run", {
   expect_identical(random$forest_diagnostics$extra_dimensions,3L)
   for(fit in list(neural,raw,hidden,random)) {
     x<-predict(fit,p[1:19,,drop=FALSE])
-    y<-predict(fit,b[1:21,,drop=FALSE])
+    y<-predict(fit,bg[1:21,,drop=FALSE])
     expect_true(all(is.finite(c(x,y))))
     expect_true(all(c(x,y)>0))
     expect_true(fit$training$total_seconds>=0)
