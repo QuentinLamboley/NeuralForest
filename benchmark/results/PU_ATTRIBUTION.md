@@ -1,6 +1,6 @@
 # PU guided forest: paired teacher attribution and transport audit
 
-Evaluated commit: 66ce5aa46339b2ce12f9182eec3b91e128233702.
+Evaluated commit: 232e9102aa0a4087ad071660390f65bde2318f11.
 Domain: synthetic. Both evaluation cohorts are test-only.
 No test outcomes were used to fit, select or calibrate any model.
 
@@ -55,36 +55,36 @@ The cheaper PUNeural reference has only one neural restart.
 
 | Group | Method | AUC | AP | Shifted AUC | Seconds, both cohorts |
 | --- | --- | ---: | ---: | ---: | ---: |
-| presence_bg_1to1 | RandomForest | 0.7971 | 0.5991 | 0.7109 | 0.463 |
-| presence_bg_1to1 | RF_BalancedUndersampled | 0.7832 | 0.5704 | 0.6992 | 0.787 |
-| presence_bg_1to1 | RF_Subsample50 | 0.8010 | 0.6084 | 0.7140 | 0.521 |
-| presence_bg_1to1 | XGBoost | 0.7838 | 0.5758 | 0.6981 | 0.140 |
-| presence_bg_1to1 | Voting_Heterogeneous | 0.8127 | 0.6528 | 0.7260 | 0.597 |
-| presence_bg_1to1 | Stacking_Boosting | 0.8051 | 0.6142 | 0.7163 | 0.996 |
-| presence_bg_1to1 | NeuralForest_PUNeural | 0.7843 | 0.6215 | 0.7038 | 0.156 |
-| presence_bg_1to1 | NeuralForest_PUStableTeacher | 0.7879 | 0.6249 | 0.7065 | 0.505 |
-| presence_bg_1to1 | NeuralForest_PUStable | 0.7879 | 0.6249 | 0.7065 | 0.502 |
-| presence_bg_1to1 | NeuralForest_PUSafe | 0.7843 | 0.6215 | 0.7038 | 0.355 |
-| presence_bg_1to5 | RandomForest | 0.7738 | 0.5940 | 0.6949 | 0.889 |
-| presence_bg_1to5 | RF_BalancedUndersampled | 0.8049 | 0.6028 | 0.7155 | 0.801 |
-| presence_bg_1to5 | RF_Subsample50 | 0.7774 | 0.6040 | 0.6985 | 0.857 |
-| presence_bg_1to5 | XGBoost | 0.7867 | 0.5747 | 0.7037 | 0.173 |
-| presence_bg_1to5 | Voting_Heterogeneous | 0.8106 | 0.6527 | 0.7276 | 0.676 |
-| presence_bg_1to5 | Stacking_Boosting | 0.8068 | 0.6259 | 0.7207 | 1.177 |
-| presence_bg_1to5 | NeuralForest_PUNeural | 0.7933 | 0.6364 | 0.7121 | 0.457 |
-| presence_bg_1to5 | NeuralForest_PUStableTeacher | 0.7950 | 0.6404 | 0.7135 | 1.674 |
-| presence_bg_1to5 | NeuralForest_PUStable | 0.7950 | 0.6404 | 0.7135 | 1.671 |
-| presence_bg_1to5 | NeuralForest_PUSafe | 0.7933 | 0.6364 | 0.7121 | 1.075 |
-| pseudoabsence_hard | RandomForest | 0.5390 | 0.3209 | 0.5259 | 0.490 |
-| pseudoabsence_hard | RF_BalancedUndersampled | 0.5376 | 0.3112 | 0.5257 | 0.871 |
-| pseudoabsence_hard | RF_Subsample50 | 0.5451 | 0.3261 | 0.5293 | 0.554 |
-| pseudoabsence_hard | XGBoost | 0.5146 | 0.2914 | 0.5100 | 0.144 |
-| pseudoabsence_hard | Voting_Heterogeneous | 0.6094 | 0.4323 | 0.5681 | 0.554 |
-| pseudoabsence_hard | Stacking_Boosting | 0.5188 | 0.3007 | 0.5135 | 1.006 |
-| pseudoabsence_hard | NeuralForest_PUNeural | 0.6931 | 0.4944 | 0.6186 | 0.140 |
-| pseudoabsence_hard | NeuralForest_PUStableTeacher | 0.7018 | 0.5096 | 0.6202 | 0.563 |
-| pseudoabsence_hard | NeuralForest_PUStable | 0.6472 | 0.4507 | 0.5899 | 0.551 |
-| pseudoabsence_hard | NeuralForest_PUSafe | 0.6931 | 0.4944 | 0.6186 | 0.314 |
+| presence_bg_1to1 | RandomForest | 0.7971 | 0.5991 | 0.7109 | 0.429 |
+| presence_bg_1to1 | RF_BalancedUndersampled | 0.7832 | 0.5704 | 0.6992 | 0.742 |
+| presence_bg_1to1 | RF_Subsample50 | 0.8010 | 0.6084 | 0.7140 | 0.500 |
+| presence_bg_1to1 | XGBoost | 0.7838 | 0.5758 | 0.6981 | 0.139 |
+| presence_bg_1to1 | Voting_Heterogeneous | 0.8127 | 0.6528 | 0.7260 | 0.534 |
+| presence_bg_1to1 | Stacking_Boosting | 0.8051 | 0.6142 | 0.7163 | 0.919 |
+| presence_bg_1to1 | NeuralForest_PUNeural | 0.7843 | 0.6215 | 0.7038 | 0.150 |
+| presence_bg_1to1 | NeuralForest_PUStableTeacher | 0.7879 | 0.6249 | 0.7065 | 0.482 |
+| presence_bg_1to1 | NeuralForest_PUStable | 0.7879 | 0.6249 | 0.7065 | 0.479 |
+| presence_bg_1to1 | NeuralForest_PUSafe | 0.7843 | 0.6215 | 0.7038 | 0.328 |
+| presence_bg_1to5 | RandomForest | 0.7738 | 0.5940 | 0.6949 | 0.861 |
+| presence_bg_1to5 | RF_BalancedUndersampled | 0.8049 | 0.6028 | 0.7155 | 0.768 |
+| presence_bg_1to5 | RF_Subsample50 | 0.7774 | 0.6040 | 0.6985 | 0.820 |
+| presence_bg_1to5 | XGBoost | 0.7867 | 0.5747 | 0.7037 | 0.152 |
+| presence_bg_1to5 | Voting_Heterogeneous | 0.8106 | 0.6527 | 0.7276 | 0.639 |
+| presence_bg_1to5 | Stacking_Boosting | 0.8068 | 0.6259 | 0.7207 | 1.082 |
+| presence_bg_1to5 | NeuralForest_PUNeural | 0.7933 | 0.6364 | 0.7121 | 0.443 |
+| presence_bg_1to5 | NeuralForest_PUStableTeacher | 0.7950 | 0.6404 | 0.7135 | 1.594 |
+| presence_bg_1to5 | NeuralForest_PUStable | 0.7950 | 0.6404 | 0.7135 | 1.591 |
+| presence_bg_1to5 | NeuralForest_PUSafe | 0.7933 | 0.6364 | 0.7121 | 1.010 |
+| pseudoabsence_hard | RandomForest | 0.5390 | 0.3209 | 0.5259 | 0.465 |
+| pseudoabsence_hard | RF_BalancedUndersampled | 0.5376 | 0.3112 | 0.5257 | 0.819 |
+| pseudoabsence_hard | RF_Subsample50 | 0.5451 | 0.3261 | 0.5293 | 0.527 |
+| pseudoabsence_hard | XGBoost | 0.5146 | 0.2914 | 0.5100 | 0.123 |
+| pseudoabsence_hard | Voting_Heterogeneous | 0.6094 | 0.4323 | 0.5681 | 0.516 |
+| pseudoabsence_hard | Stacking_Boosting | 0.5188 | 0.3007 | 0.5135 | 0.909 |
+| pseudoabsence_hard | NeuralForest_PUNeural | 0.6931 | 0.4944 | 0.6186 | 0.128 |
+| pseudoabsence_hard | NeuralForest_PUStableTeacher | 0.7018 | 0.5096 | 0.6202 | 0.530 |
+| pseudoabsence_hard | NeuralForest_PUStable | 0.6472 | 0.4507 | 0.5899 | 0.522 |
+| pseudoabsence_hard | NeuralForest_PUSafe | 0.6931 | 0.4944 | 0.6186 | 0.295 |
 
 ## Important limits
 
