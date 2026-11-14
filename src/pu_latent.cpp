@@ -6,6 +6,8 @@
 #include <Rcpp.h>
 #include <cmath>
 #include <algorithm>
+#include <random>
+#include <cstdint>
 using namespace Rcpp;
 
 namespace {
@@ -102,4 +104,28 @@ NumericVector nf_pu_cpp_align_apply(NumericVector forest,List mapping) {
     result[i]=sigmoid_safe(slope*logit_safe(forest[i])+intercept);
   }
   return result;
+}
+
+
+// [[Rcpp::export]]
+List nf_pu_cpp_random_projection(int input_columns,int hidden_units,int seed) {
+  // Explicit negative control: these features have the SAME frozen tanh
+  // form and number of columns, but no positive/unlabeled supervision.
+  if(input_columns<1 || input_columns>20000 ||
+     hidden_units<1 || hidden_units>256)
+    stop("Invalid unsupervised random projection dimension");
+  std::mt19937_64 rng(static_cast<uint64_t>(static_cast<uint32_t>(seed)));
+  std::normal_distribution<double> gaussian(0.0,
+                     1.0/std::sqrt(static_cast<double>(input_columns)));
+  NumericMatrix W(input_columns,hidden_units);
+  NumericVector bias(hidden_units),output(hidden_units);
+  for(int i=0;i<input_columns;++i)
+    for(int j=0;j<hidden_units;++j)
+      W(i,j)=gaussian(rng);
+  for(int j=0;j<hidden_units;++j) {
+    bias[j]=0.25*gaussian(rng);
+    output[j]=1.0;
+  }
+  return List::create(_["W"]=W,_["bias"]=bias,_["output"]=output,
+                      _["seed"]=seed,_["trained"]=false);
 }
