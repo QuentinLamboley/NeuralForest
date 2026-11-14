@@ -133,7 +133,16 @@ RcppExport SEXP _NeuralForest_nf_pu_cpp_align_apply(SEXP forest,SEXP mapping) {
  return wrap(nf_pu_cpp_align_apply(as<NumericVector>(forest),as<List>(mapping)));
  END_RCPP
 }
+List nf_pu_cpp_random_projection(int,int,int);
+RcppExport SEXP _NeuralForest_nf_pu_cpp_random_projection(SEXP features,SEXP units,SEXP seed) {
+ BEGIN_RCPP
+ return wrap(nf_pu_cpp_random_projection(as<int>(features),
+                                          as<int>(units),as<int>(seed)));
+ END_RCPP
+}
 static const R_CallMethodDef CallEntries[] = {
+ {"_NeuralForest_nf_pu_cpp_random_projection", (DL_FUNC) &_NeuralForest_nf_pu_cpp_random_projection, 3},
+
  {"_NeuralForest_nf_pu_cpp_hidden_units", (DL_FUNC) &_NeuralForest_nf_pu_cpp_hidden_units, 3},
  {"_NeuralForest_nf_pu_cpp_align_fit", (DL_FUNC) &_NeuralForest_nf_pu_cpp_align_fit, 2},
  {"_NeuralForest_nf_pu_cpp_align_apply", (DL_FUNC) &_NeuralForest_nf_pu_cpp_align_apply, 2},
