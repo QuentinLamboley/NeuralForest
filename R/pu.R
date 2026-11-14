@@ -173,7 +173,12 @@ predict.nf_pu_forest <- function(object,newdata,
   p <- nf_pu_ensemble_predict(object$networks,X)
   if(!is.null(object$forest)) {
     pf <- nf_pu_forest_predict(object$forest,X)
-    p <- object$alpha*p+(1-object$alpha)*pf
+    candidate <- object$alpha*p+(1-object$alpha)*pf
+    if(!is.null(object$fidelity_cap)) {
+      candidate <- p+pmax(-object$fidelity_cap,
+                          pmin(object$fidelity_cap,candidate-p))
+    }
+    p <- candidate
   }
   p <- pmin(1-1e-8,pmax(1e-8,p))
   if(type=="class")return(ifelse(p>=.5,"1","0"))

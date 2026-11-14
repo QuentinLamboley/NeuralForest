@@ -17,7 +17,8 @@ SEEDS=(17,43,71,97,131,197,251,347,401,503)
 NEW_SEEDS=(401,503)
 SCENARIOS=19
 MODELS=31
-PU_MODELS=("NeuralForest_PUNeural","NeuralForest_PUInformed","NeuralForest_PUStable")
+PU_MODELS=("NeuralForest_PUNeural","NeuralForest_PUInformed",
+           "NeuralForest_PUStable","NeuralForest_PUSafe")
 PU_SCENARIOS=("presence_bg_1to1","presence_bg_1to5","pseudoabsence_hard")
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce",
@@ -170,7 +171,7 @@ def summarize():
       "primary objective gap and the total-time ratio versus RandomForest",
       "are stored. Positive primary_advantage_vs_classic_rf is favorable.",
       "",
-      "All 5,980 per-seed score and timing records appear in all_runs.csv;",
+      "All 6,010 per-seed score and timing records appear in all_runs.csv;",
       "the cross-seed means and standard deviations are in summary.csv.",
       "Prediction time covers BOTH independent true-label test cohorts.",
       "PU methods are evaluated on three presence/background scenarios",
@@ -236,7 +237,7 @@ def summarize():
         "The three stages are also available independently in summary.csv.",
         "",
         "The experiment covers 19 scenarios, ten seeds and 31 standard methods",
-        "plus three PU-specific methods in three presence/background scenarios.",
+        "plus four PU-specific methods in three presence/background scenarios.",
         f"Successful runs: {manifest['successes']} / {len(data)}.",
         "Seeds 401 and 503 remain confirmation seeds from the v0.6 audit.",
         "A second shifted simulator population is evaluated independently",
@@ -307,6 +308,7 @@ def summarize():
         "- EXTERNAL_VALIDATION.md: shifted-cohort method comparisons",
         "- PU_STABILITY.md: cross-fitted uncertainty-gating decisions",
         "- pu_stability_choices.csv: every selected sampling strategy",
+        "- pu_safe_choices.csv: fidelity-gated candidate decisions",
         "- paired_v07_comparison.csv: same-seed reference against v0.7",
         "- all_metric_ranks.csv, metric_winners.csv: all metric rankings",
         "- ensemble_comparison.csv: voted and stacked ensemble comparison",
@@ -352,7 +354,7 @@ def summarize():
     for scenario in PU_SCENARIOS:
         g=sm[(sm.scenario==scenario)&sm.model.isin(
             ["NeuralForest_PUNeural","NeuralForest_PUInformed",
-             "NeuralForest_PUStable","NeuralForest_Adaptive",
+             "NeuralForest_PUStable","NeuralForest_PUSafe","NeuralForest_Adaptive",
              "Logistic","Voting_Heterogeneous"])]
         for row in g.sort_values("model").itertuples():
             external_report.append(
@@ -372,6 +374,9 @@ def summarize():
     (RESULTS/"EXTERNAL_VALIDATION.md").write_text(
          "\n".join(external_report)+"\n",encoding="utf8")
     stability=data[data.model=="NeuralForest_PUStable"].copy()
+    safe=data[data.model=="NeuralForest_PUSafe"].copy()
+    if len(safe)!=len(PU_SCENARIOS)*len(SEEDS):
+        raise RuntimeError("Missing safe PU model comparisons")
     stability["selected_strategy"]=stability.configuration.str.extract(
        r"(?:^|;)selected=([^;]+)",expand=False)
     stability["strength"]=pd.to_numeric(
@@ -383,6 +388,17 @@ def summarize():
     if (len(stability)!=len(PU_SCENARIOS)*len(SEEDS) or
             stability.selected_strategy.isna().any()):
         raise RuntimeError("Missing stability-gate selections")
+    safe["selected_strategy"]=safe.configuration.str.extract(
+       r"(?:^|;)selected=([^;]+)",expand=False)
+    if safe.selected_strategy.isna().any():
+        raise RuntimeError("Missing fidelity-safe PU selections")
+    safe["strength"]=pd.to_numeric(safe.configuration.str.extract(
+         r"(?:^|;)guidance=([^;]+)",expand=False),errors="coerce")
+    safe[["scenario","seed","selected_strategy","strength",
+          "boyce","external_boyce","roc_auc","external_roc_auc",
+          "pr_auc","external_pr_auc","selection_seconds",
+          "final_fit_seconds","predict_seconds","total_seconds"]].to_csv(
+       RESULTS/"pu_safe_choices.csv",index=False)
     stability[["scenario","seed","selected_strategy",
                "strength","ess_fraction","boyce","external_boyce",
                "roc_auc","external_roc_auc",
@@ -440,6 +456,35 @@ def summarize():
       "stacking comparators remain unchanged.",
       "",
       "See pu_stability_choices.csv and all_runs.csv for all outcomes."])
+    safety += ["","## Fidelity-constrained native nnPU teacher comparator","",
+       "The additional PUSafe model anchors its fallback to the exact",
+       "original three-prior native C++ nnPU network. A forest can only",
+       "be selected if BOTH holdout halves improve the worst-prior PU",
+       "risk and maintain Spearman rank correlation >=0.995 with that",
+       "teacher. Candidate forest probabilities are clipped on both",
+       "validation and prediction to within 0.02 absolute probability",
+       "of the teacher, preventing unbounded downstream drift.",
+       "",
+       "| Scenario | Original nnPU Boyce | Safe Boyce | Safe shifted Boyce | Safe selections |",
+       "| --- | ---: | ---: | ---: | --- |"]
+    for scenario in PU_SCENARIOS:
+        g=sm[sm.scenario==scenario]
+        teacher=g[g.model=="NeuralForest_PUNeural"].iloc[0]
+        guarded=g[g.model=="NeuralForest_PUSafe"].iloc[0]
+        choices=safe[safe.scenario==scenario].selected_strategy.value_counts()
+        description=", ".join(f"{label}: {int(n)}" for label,n in
+                               choices.sort_index().items())
+        safety.append(
+          f"| {scenario} | {fmt(teacher.boyce_mean,4)} | "
+          f"{fmt(guarded.boyce_mean,4)} | "
+          f"{fmt(guarded.external_boyce_mean,4)} | {description} |")
+    safety += ["","The safe option is a new *exploratory* model, motivated by",
+       "inspection of v0.8 test performance. The same old ten seeds",
+       "cannot establish confirmatory generalization or universal",
+       "superiority. Small absolute probability deviations can still",
+       "change the ordering of near-tied predictions and lower Boyce.",
+       "The unmodified v0.8 PUStable model is retained to make that",
+       "failure visible. Detailed decisions: pu_safe_choices.csv."]
     (RESULTS/"PU_STABILITY.md").write_text(
         "\n".join(safety)+"\n",encoding="utf8")
     (RESULTS/"RESULTS.md").write_text("\n".join(lines)+"\n",encoding="utf8")

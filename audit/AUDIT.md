@@ -553,3 +553,45 @@ positive-labeling mechanisms matter. v0.8 does NOT
 implement PULSNAR propensity correction. Subjecting the
 method to a deliberately feature-selected SAR labeling
 regime is a stress test, not a proof of robustness.
+
+## v0.8 observed failure and v0.9 exploratory countermeasure
+
+The completed v0.8 experiment included 5,980 successful
+synthetic evaluations, 612 public-record SCAR/SAR evaluations
+and passing Linux/Windows/macOS checks. On hard selected
+background, the stability-guided forest achieved average
+true-label Boyce 0.4512 while the original neural-only nnPU
+achieved 0.9670; on shifted synthetic test, 0.4093 vs 0.9218.
+The supposedly conservative PU validation gate selected a
+forest in all ten seeds of this scenario. Its empirical
+nnPU surrogate objective improved but the independent
+true-label ranking deteriorated. This is a clear refutation
+of the idea that two-fold PU risk gating alone guarantees
+stable generalization under selected background.
+
+Version 0.9 adds a separate `nf_pu_safe_forest` with a trust
+region around the exact original native nnPU teacher.
+The original teacher is trained with the SAME prior grid,
+number of restarts (one), encoding, random seed and
+refit scheme as v0.7 `nf_pu_forest(mode="neural")`.
+A regression test checks exact fallback equality.
+Forests still use the previously audited native
+C++ OOF neural guidance and ESS-regularized sampler.
+A candidate is evaluated using the exact probability-clipped
+output it will deploy. It must improve worst-prior PU risk
+by >0.004 separately on both selection folds AND
+preserve Spearman rank agreement >=0.995 in both.
+At inference the final predictor is restricted to at
+most 0.02 absolute probability distance from teacher.
+These thresholds are exploratory engineering tolerances,
+not universally optimal constants.
+
+The old v0.8 5,980-row main simulator data and 612-row
+public-record SCAR/SAR data are frozen by blob SHA in audit.
+Comparisons are paired across the same seeds and datasets,
+but the new method was designed *after examining* those
+outcomes. A future independent geographical, temporal
+or clinical site remains necessary to support an external
+predictive claim. This strategy prevents unbounded
+probability deviation but cannot guarantee preserving
+a ranking metric among nearly tied observations.

@@ -5,6 +5,7 @@ on:
     paths:
       - 'audit/real_pu_benchmark.py'
       - 'audit/pair_real_v07.py'
+      - 'audit/pair_real_v08.py'
       - 'benchmark/run.py'
       - 'benchmark/fit_pu_r.R'
       - 'R/**'
@@ -56,9 +57,10 @@ jobs:
         run: |
           python audit/real_pu_benchmark.py
           python audit/pair_real_v07.py
+          python audit/pair_real_v08.py
       - uses: actions/upload-artifact@v4
         with:
-          name: neuralforest-real-pu-scar-sar-612-evaluations
+          name: neuralforest-real-pu-scar-sar-630-evaluations
           path: audit/real_pu_results/
           if-no-files-found: error
       - name: Publish independently labelled test outcomes

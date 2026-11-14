@@ -23,7 +23,7 @@ from run import model_candidates,evaluate_sklearn,evaluate_R,metric_table
 SEEDS=(911,947,983)
 REGIMES=("SCAR","SAR")
 OUT=ROOT/"audit"/"real_pu_results"
-METHODS=34
+METHODS=35
 SOURCE_INFO={
     "Wisconsin_Breast_Cancer":"sklearn.datasets.load_breast_cancer (Wisconsin Diagnostic Breast Cancer, UCI)",
     "Wine_Class0":"sklearn.datasets.load_wine (Wine recognition, UCI)",
@@ -166,18 +166,20 @@ def main():
       "independent hospital, veterinary, geographical or field cohort.",
       "PU priors remain fixed at 0.12, 0.25 and 0.40; no test-label",
       "estimate of the class prior is permitted. Three seeds, 34 methods,",
-      "two confirmation regimes and 16 metrics yield 612 evaluations.",
+      "two confirmation regimes and 16 metrics yield 630 evaluations.",
       "",
-      "| Dataset | Regime | Best AUC method | AUC | NF stable | NF PU neural | NF PU informed |",
-      "| --- | --- | --- | ---: | ---: | ---: | ---: |"]
+      "| Dataset | Regime | Best AUC method | AUC | NF safe | NF stable | NF PU neural | NF PU informed |",
+      "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |"]
     for (name,regime),g in summary.groupby(["dataset","regime"]):
         top=g.sort_values("roc_auc_mean",ascending=False).iloc[0]
+        safe=g[g.method=="NeuralForest_PUSafe"].iloc[0]
         stable=g[g.method=="NeuralForest_PUStable"].iloc[0]
         teacher=g[g.method=="NeuralForest_PUNeural"].iloc[0]
         informed=g[g.method=="NeuralForest_PUInformed"].iloc[0]
         lines.append(
             f"| {name} | {regime} | {top.method} | "
-            f"{top.roc_auc_mean:.4f} | {stable.roc_auc_mean:.4f} | "
+            f"{top.roc_auc_mean:.4f} | {safe.roc_auc_mean:.4f} | "
+            f"{stable.roc_auc_mean:.4f} | "
             f"{teacher.roc_auc_mean:.4f} | {informed.roc_auc_mean:.4f} |")
     lines += ["","## Stable PU vs predecessor: all metrics and computation","",
        "No test-based selection is performed. The stable method's",
@@ -186,13 +188,15 @@ def main():
        "inference costs are recorded separately. All model scores and",
        "times appear in summary.csv and all_runs.csv.",
        "",
-       "| Dataset | Regime | Stable AP | Neural AP | Stable total (s) | Neural total (s) |",
-       "| --- | --- | ---: | ---: | ---: | ---: |"]
+       "| Dataset | Regime | Safe AP | Stable AP | Neural AP | Safe total (s) | Stable total (s) | Neural total (s) |",
+       "| --- | --- | ---: | ---: | ---: | ---: | ---: |"]
     for (name,regime),g in summary.groupby(["dataset","regime"]):
+        sa=g[g.method=="NeuralForest_PUSafe"].iloc[0]
         st=g[g.method=="NeuralForest_PUStable"].iloc[0]
         nn=g[g.method=="NeuralForest_PUNeural"].iloc[0]
-        lines.append(f"| {name} | {regime} | {st.pr_auc_mean:.4f} | "
-                     f"{nn.pr_auc_mean:.4f} | {st.seconds_mean:.3f} | "
+        lines.append(f"| {name} | {regime} | {sa.pr_auc_mean:.4f} | "
+                     f"{st.pr_auc_mean:.4f} | {nn.pr_auc_mean:.4f} | "
+                     f"{sa.seconds_mean:.3f} | {st.seconds_mean:.3f} | "
                      f"{nn.seconds_mean:.3f} |")
     lines+=["","## Limits","",
      "The pseudo-unlabeled regime is simulated from known real labels.",
@@ -210,7 +214,7 @@ def main():
                   model_types=METHODS,regimes=list(REGIMES),rows=len(all_rows),
                   real_source_public=True,hidden_labels_simulated=True,
                   truly_independent_external_sites=False,
-                  comparator_count=31,native_pu_methods=3,
+                  comparator_count=31,native_pu_methods=4,
                   metrics=16)
     (OUT/"manifest.json").write_text(
         json.dumps(manifest,indent=2),encoding="utf8")

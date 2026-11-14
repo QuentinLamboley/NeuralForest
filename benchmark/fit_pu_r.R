@@ -15,9 +15,14 @@ Xexternal <- external[,names(external)!="Vampirisme",drop=FALSE]
 label <- as.integer(train$Vampirisme)
 if(!all(label %in% c(0L,1L)))stop("PU training labels must be 0/1")
 models <- list()
-for(kind in c("neural","informed","stable")) {
+for(kind in c("neural","informed","stable","safe")) {
   start <- proc.time()[["elapsed"]]
-  fitted <- if(kind=="stable")
+  fitted <- if(kind=="safe")
+    nf_pu_safe_forest(X,label,seed=seed,
+      priors=c(.12,.25,.40),hidden=20L,epochs=60L,n_trees=130L,
+      min_gain=.004,strengths=c(.25,.55),min_ess=.96,
+      uncertainty_limit=.35,fidelity_cap=.02,min_rank_correlation=.995)
+  else if(kind=="stable")
     nf_pu_stable_forest(X,label,seed=seed,
       priors=c(.12,.25,.40),hidden=20L,epochs=60L,n_trees=130L,
       min_gain=.004,strengths=c(.25,.55),min_ess=.96,
@@ -32,7 +37,8 @@ for(kind in c("neural","informed","stable")) {
   models[[length(models)+1L]] <- list(
     name=switch(kind,neural="NeuralForest_PUNeural",
                 informed="NeuralForest_PUInformed",
-                stable="NeuralForest_PUStable"),
+                stable="NeuralForest_PUStable",
+                safe="NeuralForest_PUSafe"),
     probability=prediction,external_probability=ext,
     train_seconds=train_time,prediction_seconds=prediction_time,
     selection_seconds=fitted$timings$selection_seconds,

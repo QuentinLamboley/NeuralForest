@@ -430,3 +430,45 @@ need to test departures from SCAR (e.g. Kumar & Lambert,
 PULSNAR, PeerJ Computer Science 2024, DOI
 10.7717/peerj-cs.2451). It is not a reproduction of
 PULSNAR or a guarantee that SCAR violations are corrected.
+
+## v0.9 exploratory safeguard after the v0.8 failure
+
+The v0.8 empirical PU-risk gate **failed** to retain the nnPU
+network's ranking on synthetic hard background: stable-forest Boyce
+was 0.4512 while the standalone nnPU network reached 0.9670.
+A strong PU surrogate validation score is not the same as true-label
+generalization, particularly if the unlabeled group is feature-selected.
+
+Version 0.9 adds `nf_pu_safe_forest()` as a separate experimental
+strategy and **does not remove or change** the previous variants.
+Its fallback is architecturally identical to the standalone
+v0.7 `nf_pu_forest(mode="neural")` network: same number of prior
+networks, training seeds and encoding. When no native forest passes,
+it must reproduce the legacy neural prediction to machine precision.
+
+Guided and unguided forests are fitted with the existing C++17
+tree implementation and the out-of-fold, uncertainty-constrained
+sampling weights from v0.8. Candidate blending is constrained
+to stay within 0.02 absolute probability of the neural teacher,
+both at selection and at prediction, and requires Spearman
+concordance >=0.995 on *each* separate PU holdout half in
+addition to worst-prior empirical PU risk improvement. Native
+C++ forest fitting, PU network fitting and all candidate
+search costs are included in timing.
+
+This is not a guarantee against a reduction in AUC, Boyce or
+average precision: even a small absolute probability change
+can reorder near-tied observations, and the PU risk itself
+may be misspecified. The fidelity cap prevents the forest
+from causing an arbitrarily large *probability displacement*,
+not an arbitrary rank-metric loss.
+
+The new method competes alongside all 31 unmodified baseline
+algorithms, and the prior three PU methods, on the original
+19 x 10 simulator scenarios (expected 6,010 total records).
+A real-data experiment repeats three datasets, three seeds,
+both SCAR and feature-dependent SAR positive-confirmation
+mechanisms and all 35 methods (expected 630 records). Old
+data are archived for matched before/after testing. These
+are exploratory experiments because the data families
+were inspected before the new method was formulated.

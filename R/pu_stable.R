@@ -22,14 +22,14 @@ nf_pu_stable_matrix <- function(models,X) {
   matrix(ans,nrow=nrow(X),ncol=length(models$networks))
 }
 
-nf_pu_stable_oof <- function(X,y,priors,hidden,epochs,seed) {
+nf_pu_stable_oof <- function(X,y,priors,hidden,epochs,seed,restarts=2L) {
   # Small class support makes cross-fit PU risk very unstable. In that
   # circumstance skip guided trees instead of using in-sample predictions.
   if(min(tabulate(y+1L,nbins=2L))<50L) return(NULL)
   half <- nf_split_indices(y,"classification",.49,seed+73L)
   chunks <- list(half$train,half$validation)
   n <- nrow(X)
-  out <- matrix(NA_real_,n,2L*length(priors))
+  out <- matrix(NA_real_,n,as.integer(restarts)*length(priors))
   for(j in seq_along(chunks)) {
     hold <- chunks[[j]]
     training <- setdiff(seq_len(n),hold)
@@ -37,7 +37,7 @@ nf_pu_stable_oof <- function(X,y,priors,hidden,epochs,seed) {
       return(NULL)
     model <- nf_pu_stable_ensemble(
       X[training,,drop=FALSE],y[training],
-      priors,hidden,epochs,seed+2111L*j)
+      priors,hidden,epochs,seed+2111L*j,restarts=restarts)
     out[hold,] <- nf_pu_stable_matrix(model,X[hold,,drop=FALSE])
   }
   if(any(!is.finite(out)))stop("Incomplete out-of-fold PU predictions")
@@ -84,7 +84,8 @@ nf_pu_stable_risks <- function(y,p,priors,folds) {
 nf_pu_stable_forest <- function(
   x,y,priors=c(.12,.25,.40),seed=42L,hidden=20L,
   epochs=60L,n_trees=130L,min_gain=.004,
-  strengths=c(.25,.55),min_ess=.96,uncertainty_limit=.35) {
+  strengths=c(.25,.55),min_ess=.96,uncertainty_limit=.35,
+  teacher_restarts=2L,fidelity_cap=NULL,min_rank_correlation=0) {
   if(!is.numeric(y) && !is.factor(y))
     stop("PU labels must be numeric 0/1 or factor 0/1")
   raw_y <- as.character(y)
@@ -109,7 +110,15 @@ nf_pu_stable_forest <- function(
      uncertainty_limit<=0||uncertainty_limit>1||
      length(hidden)!=1L||hidden<1||hidden>256||
      length(epochs)!=1L||epochs<1||epochs>1500||
-     length(n_trees)!=1L||n_trees<1)
+     length(n_trees)!=1L||n_trees<1||
+     length(teacher_restarts)!=1L||
+       !(teacher_restarts %in% c(1L,2L))||
+     length(min_rank_correlation)!=1L||
+       !is.finite(min_rank_correlation)||
+       min_rank_correlation<0||min_rank_correlation>1||
+     (!is.null(fidelity_cap) &&
+       (length(fidelity_cap)!=1L||!is.finite(fidelity_cap)||
+        fidelity_cap<=0||fidelity_cap>=1)))
     stop("Invalid stable PU model controls")
   now <- function()proc.time()[["elapsed"]]
   beginning <- now()
@@ -120,7 +129,8 @@ nf_pu_stable_forest <- function(
                             fit=enc$encoding)$X
   yt <- y[split$train]
   yv <- y[split$validation]
-  teacher <- nf_pu_stable_ensemble(training,yt,priors,hidden,epochs,seed)
+  teacher <- nf_pu_stable_ensemble(training,yt,priors,hidden,epochs,
+                                  seed,restarts=teacher_restarts)
   teacher_val <- nf_pu_ensemble_predict(teacher,validation)
   use_two_halves <- min(tabulate(yv+1L,nbins=2L))>=6L
   if(use_two_halves) {
@@ -135,13 +145,28 @@ nf_pu_stable_forest <- function(
     worst_risk=max(base_risk),worst_gain=0,
     eligible=TRUE,stringsAsFactors=FALSE)
   crossfit <- if(use_two_halves) nf_pu_stable_oof(
-    training,yt,priors,hidden,epochs,seed+119L) else NULL
-  candidate_records <- list()
+    training,yt,priors,hidden,epochs,seed+119L,
+    restarts=teacher_restarts) else NULL
   consider <- function(name,p,strength,blend) {
+    # The fidelity-limited mode only judges predictions it could actually
+    # deploy. Do not select on an unconstrained validation prediction and
+    # clip only at inference.
+    if(!is.null(fidelity_cap))
+      p <- teacher_val+pmax(-fidelity_cap,
+               pmin(fidelity_cap,p-teacher_val))
     risks <- nf_pu_stable_risks(yv,p,priors,folds)
+    correlations <- vapply(folds,function(rows) {
+      if(min_rank_correlation<=0)return(1.0)
+      if(stats::sd(p[rows])<1e-12 ||
+         stats::sd(teacher_val[rows])<1e-12)return(NA_real_)
+      suppressWarnings(stats::cor(
+        teacher_val[rows],p[rows],method="spearman"))
+    },numeric(1))
     improvement <- base_risk-risks
     eligible <- use_two_halves &&
-      all(is.finite(risks)) && all(improvement>min_gain)
+      all(is.finite(risks)) && all(improvement>min_gain) &&
+      all(is.finite(correlations)) &&
+      all(correlations>=min_rank_correlation)
     history <<- rbind(history,data.frame(
       candidate=name,strength=strength,blend=blend,
       worst_risk=max(risks),worst_gain=min(improvement),
@@ -175,10 +200,15 @@ nf_pu_stable_forest <- function(
   final_start <- now()
   # Re-estimate the final imputation/encoding using ONLY the full training
   # sample; the two independent test cohorts are never consulted here.
-  full_enc <- nf_encoding(x)
+  # In fidelity mode use exactly the same encoding as the legacy nnPU
+  # teacher: a neural-only fallback reproduces its probabilities.
+  full_enc <- if(is.null(fidelity_cap)) nf_encoding(x) else
+    list(X=nf_encoding(x,fit=enc$encoding)$X,
+         encoding=enc$encoding)
   fullX <- full_enc$X
   final_teacher <- nf_pu_stable_ensemble(
-    fullX,y,priors,hidden,epochs,seed+989L)
+    fullX,y,priors,hidden,epochs,seed+989L,
+    restarts=teacher_restarts)
   final_forest <- NULL
   diagnostics <- list(ess_fraction=1,guided_fraction=0,
                       mean_confidence=0,shrink_factor=1,
@@ -186,7 +216,7 @@ nf_pu_stable_forest <- function(
   if(is.finite(selected$strength)) {
     if(selected$strength>0) {
       posterior <- nf_pu_stable_oof(fullX,y,priors,hidden,epochs,
-                                   seed+14027L)
+                                   seed+14027L,restarts=teacher_restarts)
       if(is.null(posterior))
         stop("Selected guidance cannot be safely cross-fitted on full data")
       guidance <- nf_pu_cpp_stable_weights(
@@ -211,6 +241,8 @@ nf_pu_stable_forest <- function(
     validation_pu_risk=max(selected$risks),
     selected_candidate=selected$name,
     selected_strength=selected$strength,
+    fidelity_cap=fidelity_cap,
+    min_rank_correlation=min_rank_correlation,
     selection_history=history,stability_diagnostics=diagnostics,
     hidden=hidden,epochs=epochs,n_trees=n_trees,
     timings=list(selection_seconds=select_time,
@@ -218,4 +250,36 @@ nf_pu_stable_forest <- function(
                  total_training_seconds=now()-beginning))
   class(out) <- "nf_pu_forest"
   out
+}
+
+#' Fidelity-constrained native PU forest with exact neural fallback
+#'
+#' Builds on the stable PU forest but constrains every selected forest
+#' to change the original native nnPU teacher's predictions by at most
+#' `fidelity_cap` in absolute probability, both on validation and on
+#' future observations. Selection additionally requires high Spearman
+#' concordance separately on two validation halves. This bound limits
+#' probability drift but CANNOT guarantee Boyce, AUC or AP non-inferiority,
+#' especially for observations whose teacher scores are nearly tied.
+#' If no candidate passes the gate, the fitted model reproduces the
+#' standalone `nf_pu_forest(..., mode="neural")` exactly.
+#' @inheritParams nf_pu_stable_forest
+#' @param fidelity_cap Maximum absolute difference from nnPU teacher.
+#' @param min_rank_correlation Minimum teacher/forest Spearman rank
+#'   correlation separately on each PU holdout half.
+#' @return A fitted `nf_pu_forest`.
+#' @export
+nf_pu_safe_forest <- function(
+   x,y,priors=c(.12,.25,.40),seed=42L,hidden=20L,
+   epochs=60L,n_trees=130L,min_gain=.004,
+   strengths=c(.25,.55),min_ess=.96,uncertainty_limit=.35,
+   fidelity_cap=.02,min_rank_correlation=.995) {
+  nf_pu_stable_forest(
+    x=x,y=y,priors=priors,seed=seed,hidden=hidden,
+    epochs=epochs,n_trees=n_trees,min_gain=min_gain,
+    strengths=strengths,min_ess=min_ess,
+    uncertainty_limit=uncertainty_limit,
+    teacher_restarts=1L,
+    fidelity_cap=fidelity_cap,
+    min_rank_correlation=min_rank_correlation)
 }

@@ -322,3 +322,34 @@ network or standard forest. The experiment is capable of
 falsifying the improvement claim; no positive result is
 hardcoded. The repeated inspection of old seeds and
 simulated scenarios limits confirmatory interpretation.
+
+## v0.9: anchored PU teacher with fidelity-limited tree augmentation
+
+NeuralForest_PUSafe is an *additional* PU-only model. It
+preserves the original C++ nnPU teacher of v0.7 (three prior
+networks) as an exact fallback; unlike v0.8, it does not use
+a second teacher restart. For every forest candidate,
+predeclared requirements are: maximum absolute posterior
+displacement <=0.02, Spearman rank agreement >=0.995 on
+both PU holdout halves, and improvement of worst-prior PU
+risk >0.004 on both. The same displacement cap is enforced
+at future prediction time; the selection compares those
+same capped outputs, preventing training/deployment mismatch.
+The native sampling algorithm still uses held-out cross-fitted
+teacher predictions and an ESS fraction >=0.96.
+
+Predeclared main outcomes are (a) neural fidelity (fraction
+of the ten seeds selecting neural-only), (b) difference in
+independent true-label Boyce, rank-Boyce and AUC against
+nnPU, (c) comparison on a shifted synthetic test population,
+(d) disjoint public-record SCAR/SAR AUC, AP and Brier, and
+(e) selection, final fit and inference wall time.
+
+All 31 original methods and three earlier PU-specific
+models remain in the tables. New totals: 6,010 synthetic
+runs and 630 public-record experiments. The new policy
+was designed in response to the inspected v0.8 failure:
+reusing the same scenario seeds cannot establish
+independent confirmation, and benchmark success alone
+cannot justify deploying on a clinical patient or
+ecological suitability map.
