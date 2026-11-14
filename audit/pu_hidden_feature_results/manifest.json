@@ -1,0 +1,46 @@
+{
+  "scenarios": [
+    "interaction_xor",
+    "linear",
+    "no_signal"
+  ],
+  "regimes": [
+    "SCAR",
+    "SAR"
+  ],
+  "seeds": [
+    5701,
+    5717,
+    5741,
+    5779,
+    5801,
+    5813,
+    5839,
+    5879,
+    5903,
+    5939
+  ],
+  "native_versions": [
+    "NeuralForest_PUHiddenTeacher",
+    "NeuralForest_PUHiddenRawCandidate",
+    "NeuralForest_PUHiddenRandomCandidate",
+    "NeuralForest_PUHiddenLatentCandidate",
+    "NeuralForest_PUHiddenRawVerified",
+    "NeuralForest_PUHiddenRandomVerified",
+    "NeuralForest_PUHiddenLatentVerified"
+  ],
+  "baseline_controls": [
+    "RandomForest",
+    "ExtraTrees",
+    "XGBoost",
+    "CatBoost"
+  ],
+  "expected_records": 660,
+  "actual_records": 660,
+  "derived_nnpu_teacher_shared_with_raw_forest": true,
+  "raw_and_hidden_nnpu_identical_seed": true,
+  "audit_true_outcomes_resolved_separately": true,
+  "test_labels_used_for_any_training_or_selection": false,
+  "external_clinical_validation": false,
+  "commit": "29c6914ed7201c0d4125ce6909e40825255cab5c"
+}
