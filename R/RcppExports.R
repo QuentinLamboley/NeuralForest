@@ -95,3 +95,10 @@ nf_po_cpp_predict <- function(model,X) {
   .Call("_NeuralForest_nf_po_cpp_predict",PACKAGE="NeuralForest",
         model,X)
 }
+
+
+nf_po_cpp_gradient <- function(scores,labels,weights,target_cap=5) {
+ .Call("_NeuralForest_nf_po_cpp_gradient",PACKAGE="NeuralForest",
+       as.numeric(scores),as.numeric(labels),as.numeric(weights),
+       as.numeric(target_cap))
+}
