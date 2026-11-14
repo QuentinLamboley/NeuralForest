@@ -82,7 +82,8 @@ def case_models(case,seed):
             background_policy=case.background_policy,
             seed=case.seed,outer_block=case.fold,inner_block=block,
             model=name,implementation=kind,
-            selected_stages=int(stages) if stages is not None else None,
+            selected_stages=(int(stages) if str(stages) not in
+              ("None","NA","NaN","nan","null") else None),
             n_outer_train_presences=len(case.presence_train),
             n_outer_train_background=len(case.background_train),
             n_inner_fit_presences=len(partition["ptrain"]),
