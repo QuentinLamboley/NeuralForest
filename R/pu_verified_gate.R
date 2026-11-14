@@ -11,6 +11,7 @@ nf_pu_matched_teacher <- function(object) {
   ans <- object
   ans$forest <- NULL
   ans$rank_map <- NULL
+  ans$residual_trees <- NULL
   ans$alpha <- 1
   ans$mode <- "neural_matched"
   ans
