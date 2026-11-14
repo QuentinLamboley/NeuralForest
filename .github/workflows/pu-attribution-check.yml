@@ -1,0 +1,27 @@
+name: PU attribution protocol tests
+on:
+  pull_request:
+    paths:
+      - 'benchmark/test_pu_attribution.py'
+      - 'audit/pu_attribution.py'
+      - 'R/pu_verified_gate.R'
+      - 'benchmark/fit_pu_r.R'
+      - '.github/workflows/pu-attribution-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paired_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install audit-only dependencies
+        run: python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4"
+      - name: Validate Python source and paired-data protocol
+        run: |
+          python -m compileall -q audit/pu_attribution.py benchmark/test_pu_attribution.py
+          python -m unittest discover -s benchmark -p 'test_pu_attribution.py' -v

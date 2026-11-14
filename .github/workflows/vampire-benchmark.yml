@@ -87,6 +87,7 @@ jobs:
       - name: Aggregate external test metrics
         run: |
           python benchmark/summarize.py
+          python audit/pu_attribution.py --domain synthetic
           python audit/pair_v03.py
           python audit/pair_v041.py
           python audit/pair_v05.py

@@ -368,3 +368,30 @@ NeuralForest_PUStable remains a less constrained forest capable of altering
 rankings, now guarded on every prior separately. Both are evaluated under
 the same RF, subsampled RF, boosting, voting and stacking comparisons;
 model selection, final training and both test-cohort inference are timed.
+
+### v0.9.2 matched teacher and verified outcome protocol
+
+The PUStableTeacher control uses exactly the same fitted C++ neural
+ensemble and encoding as PUStable, with tree inference disabled.
+This isolates forest effects from the additional neural restarts.
+It shares the training and selection time of PUStable; it is NOT
+a separately trained algorithm and must not be counted twice.
+
+Complete experiments produce 6,040 synthetic prediction records
+from 6,010 independent fits and 648 public-data prediction records
+from 630 independent fits. The 31 established baseline methods
+(including classical and undersampled RF, boosting, voting, stacking)
+are preserved. Training, model selection and inference are timed.
+
+The PU attribution audit performs paired per-seed comparisons
+on both test cohorts. It blocks publication if PUSafe violates
+strict AUC/AP rank preservation relative to the original nnPU.
+These outcomes remain TEST-ONLY and are not used for model selection.
+
+An optional nf_pu_verified_gate() can use a separately reserved
+cohort with true verified positives AND verified negatives to choose
+between a fitted forest and its own matched neural teacher.
+Gain must be demonstrated in BOTH audit halves while meeting
+average precision and Brier constraints. Too little label support
+forces fallback. A THIRD, untouched test cohort is still necessary.
+Repeated use of this audit for tuning would invalidate its guarantee.

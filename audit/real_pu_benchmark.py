@@ -23,7 +23,7 @@ from run import model_candidates,evaluate_sklearn,evaluate_R,metric_table
 SEEDS=(911,947,983)
 REGIMES=("SCAR","SAR")
 OUT=ROOT/"audit"/"real_pu_results"
-METHODS=35
+METHODS=36
 SOURCE_INFO={
     "Wisconsin_Breast_Cancer":"sklearn.datasets.load_breast_cancer (Wisconsin Diagnostic Breast Cancer, UCI)",
     "Wine_Class0":"sklearn.datasets.load_wine (Wine recognition, UCI)",
@@ -165,8 +165,10 @@ def main():
       "This is out-of-simulator validation on real records, but NOT an",
       "independent hospital, veterinary, geographical or field cohort.",
       "PU priors remain fixed at 0.12, 0.25 and 0.40; no test-label",
-      "estimate of the class prior is permitted. Three seeds, 35 methods,",
-      "two confirmation regimes and 16 metrics yield 630 evaluations.",
+      "estimate of the class prior is permitted. Three seeds, 36 predictions,",
+      "two confirmation regimes and 16 metrics yield 648 evaluations.",
+      "The matched two-restart teacher is a component prediction sharing",
+      "all of PUStable's training: only 630 distinct model fits occur.",
       "",
       "| Dataset | Regime | Best AUC method | AUC | NF safe | NF stable | NF PU neural | NF PU informed |",
       "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |"]
@@ -182,6 +184,8 @@ def main():
             f"{stable.roc_auc_mean:.4f} | "
             f"{teacher.roc_auc_mean:.4f} | {informed.roc_auc_mean:.4f} |")
     lines += ["","## Stable PU vs predecessor: all metrics and computation","",
+       "PUStableTeacher is the exact fitted six-network teacher component",
+       "of PUStable and isolates the tree contribution from extra restarts.",
        "No test-based selection is performed. The stable method's",
        "cross-fitting, candidate forests, teacher fitting and holdout",
        "selection are counted under selection_seconds. Its refit and",
@@ -214,7 +218,7 @@ def main():
                   model_types=METHODS,regimes=list(REGIMES),rows=len(all_rows),
                   real_source_public=True,hidden_labels_simulated=True,
                   truly_independent_external_sites=False,
-                  comparator_count=31,native_pu_methods=4,
+                  comparator_count=31,native_pu_methods=5,
                   metrics=16)
     (OUT/"manifest.json").write_text(
         json.dumps(manifest,indent=2),encoding="utf8")

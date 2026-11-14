@@ -18,7 +18,8 @@ NEW_SEEDS=(401,503)
 SCENARIOS=19
 MODELS=31
 PU_MODELS=("NeuralForest_PUNeural","NeuralForest_PUInformed",
-           "NeuralForest_PUStable","NeuralForest_PUSafe")
+           "NeuralForest_PUStable","NeuralForest_PUStableTeacher",
+           "NeuralForest_PUSafe")
 PU_SCENARIOS=("presence_bg_1to1","presence_bg_1to5","pseudoabsence_hard")
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce",
@@ -35,6 +36,7 @@ def summarize():
     data=pd.concat([pd.read_csv(p) for p in paths],ignore_index=True)
     # Each (scenario, seed, model) is unique. Missing fits remain explicit.
     expected=SCENARIOS*len(SEEDS)*MODELS+len(PU_SCENARIOS)*len(SEEDS)*len(PU_MODELS)
+    independent_fits=expected-len(PU_SCENARIOS)*len(SEEDS)
     if len(data)!=expected: raise RuntimeError(
         f"Expected {expected} score rows but found {len(data)}")
     if data[["scenario","seed","model"]].duplicated().any():
@@ -171,7 +173,7 @@ def summarize():
       "primary objective gap and the total-time ratio versus RandomForest",
       "are stored. Positive primary_advantage_vs_classic_rf is favorable.",
       "",
-      "All 6,010 per-seed score and timing records appear in all_runs.csv;",
+      f"All {expected:,} per-seed score and timing records appear in all_runs.csv;",
       "the cross-seed means and standard deviations are in summary.csv.",
       "Prediction time covers BOTH independent true-label test cohorts.",
       "PU methods are evaluated on three presence/background scenarios",
@@ -213,7 +215,8 @@ def summarize():
         seeds=list(SEEDS),new_confirmation_seeds=list(NEW_SEEDS),
         scenarios=sorted(data.scenario.unique().tolist()),
         models=sorted(data.model.unique().tolist()),
-        rows=len(data),successes=int((data.status=="ok").sum()),
+        rows=len(data),independent_model_fits=independent_fits,
+        successes=int((data.status=="ok").sum()),
         failures=data.loc[data.status!="ok",[
             "scenario","seed","model","error"]].fillna("").to_dict("records"),
         paired_old_rows=0 if compared is None else len(compared),
@@ -237,8 +240,12 @@ def summarize():
         "The three stages are also available independently in summary.csv.",
         "",
         "The experiment covers 19 scenarios, ten seeds and 31 standard methods",
-        "plus four PU-specific methods in three presence/background scenarios.",
-        f"Successful runs: {manifest['successes']} / {len(data)}.",
+        "plus five PU-specific predictions in three presence/background scenarios.",
+        "The matched two-restart teacher shares the fit and selection cost",
+        "of PUStable: it is not a separate independently trained algorithm.",
+        f"Successful prediction records: {manifest['successes']} / {len(data)}.",
+        f"Independent model fits: {independent_fits}; the additional",
+        "PUStableTeacher prediction shares its fitted model with PUStable.",
         "Seeds 401 and 503 remain confirmation seeds from the v0.6 audit.",
         "A second shifted simulator population is evaluated independently",
         "without using any of its labels during fitting or model selection.",
@@ -329,7 +336,7 @@ def summarize():
         "used neither this cohort nor its true labels. This is NOT",
         "validation on an independently collected real-world dataset.",
         "",
-        f"The main analysis includes {expected} successful fits and",
+        f"The main analysis includes {expected} successful prediction records and",
         "records all 16 metrics on both independent test populations.",
         "",
         "| Scenario | Metric | Best shifted-cohort model | Shifted score | NeuralForest Adaptive |",
@@ -354,7 +361,8 @@ def summarize():
     for scenario in PU_SCENARIOS:
         g=sm[(sm.scenario==scenario)&sm.model.isin(
             ["NeuralForest_PUNeural","NeuralForest_PUInformed",
-             "NeuralForest_PUStable","NeuralForest_PUSafe","NeuralForest_Adaptive",
+             "NeuralForest_PUStable","NeuralForest_PUStableTeacher",
+             "NeuralForest_PUSafe","NeuralForest_Adaptive",
              "Logistic","Voting_Heterogeneous"])]
         for row in g.sort_values("model").itertuples():
             external_report.append(
@@ -408,7 +416,7 @@ def summarize():
     safety=[
       "# Cross-fitted uncertainty-guided PU forests: stability audit","",
       "Three legacy PU-background scenarios are compared on ten seeds.",
-      "Only the 3 specialized PU methods see confirmed-positive versus",
+      "Only the PU-specific variants see confirmed-positive versus",
       "unlabeled labels. The 31 comparator methods remain unchanged.",
       "The stability-gated model uses six native C++ nnPU networks",
       "(two initializations at each of three fixed class-prior assumptions).",
@@ -416,7 +424,7 @@ def summarize():
       "cross-fitted teacher predictions, never in-sample network outputs.",
       "C++ weighting preserves group mass and ensures unlabeled",
       "effective sample fraction at least 0.96. A candidate forest",
-      "must beat neural-only worst-prior PU validation risk on both",
+      "must improve PU risk for every predefined prior on both",
       "separate holdout halves by more than 0.004; otherwise it falls",
       "back to the neural-only predictor.",
       "",
@@ -481,8 +489,10 @@ def summarize():
     safety += ["","The safe option is a new *exploratory* model, motivated by",
        "inspection of v0.8 test performance. The same old ten seeds",
        "cannot establish confirmatory generalization or universal",
-       "superiority. Small absolute probability deviations can still",
-       "change the ordering of near-tied predictions and lower Boyce.",
+       "superiority. The v0.9.1 C++ rank-safe projection strictly",
+       "preserves nnPU score order, so PUSafe cannot improve or harm",
+       "AUC/AP relative to the matched legacy nnPU model apart from",
+       "numerical ties. Calibration and ordinary Boyce can still change.",
        "The unmodified v0.8 PUStable model is retained to make that",
        "failure visible. Detailed decisions: pu_safe_choices.csv."]
     (RESULTS/"PU_STABILITY.md").write_text(
