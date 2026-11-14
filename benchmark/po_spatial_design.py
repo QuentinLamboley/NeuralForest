@@ -37,6 +37,8 @@ class SpatialCase:
     background_train:pd.DataFrame
     presence_test:pd.DataFrame
     background_test:pd.DataFrame
+    presence_train_folds:np.ndarray
+    background_train_folds:np.ndarray
     oracle_true_intensity:np.ndarray
     oracle_effort:np.ndarray
     all_train_cells:set[int]
@@ -124,6 +126,8 @@ def spatial_cases(scenario:str,effort_condition:str,
           background_train=features.iloc[btr].reset_index(drop=True),
           presence_test=features.iloc[ptest].reset_index(drop=True),
           background_test=features.iloc[btest].reset_index(drop=True),
+          presence_train_folds=np.asarray(folds[ptr],dtype=int),
+          background_train_folds=np.asarray(folds[btr],dtype=int),
           oracle_true_intensity=np.asarray(truth[btest],float),
           oracle_effort=np.asarray(effort[btest],float),
           all_train_cells=traincells,all_test_cells=testcells,
@@ -137,6 +141,12 @@ def validate_case(case:SpatialCase):
     assert list(case.background_test)==list(PREDICTORS)
     assert case.oracle_true_intensity.shape==(
       len(case.background_test),)
+    assert case.presence_train_folds.shape==(
+      len(case.presence_train),)
+    assert case.background_train_folds.shape==(
+      len(case.background_train),)
+    assert case.fold not in set(case.presence_train_folds)
+    assert case.fold not in set(case.background_train_folds)
     assert len(case.presence_train)>=30
     assert len(case.presence_test)>=10
     assert (case.oracle_true_intensity>0).all()
