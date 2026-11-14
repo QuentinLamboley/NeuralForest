@@ -34,8 +34,10 @@ SCENARIOS=("interaction_xor","linear","no_signal")
 REGIMES=("SCAR","SAR")
 NATIVE=("NeuralForest_PUHiddenTeacher",
         "NeuralForest_PUHiddenRawCandidate",
+        "NeuralForest_PUHiddenRandomCandidate",
         "NeuralForest_PUHiddenLatentCandidate",
         "NeuralForest_PUHiddenRawVerified",
+        "NeuralForest_PUHiddenRandomVerified",
         "NeuralForest_PUHiddenLatentVerified")
 BASELINES=("RandomForest","ExtraTrees","XGBoost","CatBoost")
 METRICS=("auc","ap","brier","logloss","boyce")
@@ -133,13 +135,19 @@ def main():
     paired=[]
     for (scenario,regime,seed),g in df.groupby(["scenario","regime","seed"]):
         model=lambda name:g[g.model==name].iloc[0]
-        base=model(NATIVE[0]);raw=model(NATIVE[1]);latent=model(NATIVE[2])
-        raw_gate=model(NATIVE[3]);latent_gate=model(NATIVE[4])
+        base=model(NATIVE[0]);raw=model(NATIVE[1])
+        random=model(NATIVE[2]);latent=model(NATIVE[3])
+        raw_gate=model(NATIVE[4]);random_gate=model(NATIVE[5])
+        latent_gate=model(NATIVE[6])
         for name,student,ref in (
-            ("hidden_vs_raw",latent,raw),
+            ("learned_hidden_vs_random_tanh",latent,random),
+            ("learned_hidden_vs_raw",latent,raw),
+            ("random_tanh_vs_raw",random,raw),
             ("raw_vs_nnpu",raw,base),
             ("hidden_vs_nnpu",latent,base),
+            ("random_vs_nnpu",random,base),
             ("hidden_verified_vs_nnpu",latent_gate,base),
+            ("random_verified_vs_nnpu",random_gate,base),
             ("raw_verified_vs_nnpu",raw_gate,base)):
             for m in METRICS:
               for prefix in ("","shift_"):
