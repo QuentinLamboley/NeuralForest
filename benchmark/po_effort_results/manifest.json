@@ -1,0 +1,14 @@
+{
+  "predeclared_cases": 36,
+  "models": 13,
+  "prediction_records": 468,
+  "full_unbiased_and_biased_detection_design": true,
+  "true_effort_known_only_in_simulation": true,
+  "independent_imperfect_effort_proxy": true,
+  "true_habitat_oracle_excluded_from_all_training": true,
+  "geographically_disjoint_train_inner_outer": true,
+  "ecological_ground_truth_used_only_for_final_evaluation": true,
+  "nonindependent_correlated_spatial_folds": true,
+  "confirmatory_field_evidence": false,
+  "github_sha": "232e9102aa0a4087ad071660390f65bde2318f11"
+}
