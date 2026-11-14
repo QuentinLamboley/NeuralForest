@@ -1,0 +1,25 @@
+{
+  "run_sha": "445a4f45a76c7be467f1e25dd44fc17badb9fc9a",
+  "generator_revision": "48c2b28ca7874cbef1f7dde15de962c6e56c5027",
+  "scenarios": [
+    "presence_bg_1to1",
+    "presence_bg_1to5",
+    "pseudoabsence_hard"
+  ],
+  "seeds": [
+    17,
+    43,
+    71,
+    97,
+    131,
+    197,
+    251,
+    347,
+    401,
+    503
+  ],
+  "records": 60,
+  "independent_training_fits": 30,
+  "same_seed_as_prior_audits": true,
+  "independent_real_world_validation": false
+}
