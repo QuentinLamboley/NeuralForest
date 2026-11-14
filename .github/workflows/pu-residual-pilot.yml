@@ -1,5 +1,13 @@
 name: Experimental PU residual pilot
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'R/pu_residual.R'
+      - 'src/pu_residual.cpp'
+      - 'benchmark/pu_residual_pilot.py'
+      - 'benchmark/pu_residual_verified.py'
+      - '.github/workflows/pu-residual-pilot.yml'
   pull_request:
     paths:
       - 'R/pu_residual.R'
@@ -12,7 +20,7 @@ on:
       - '.github/workflows/pu-residual-pilot.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   pilot:
     runs-on: ubuntu-latest
@@ -65,3 +73,15 @@ jobs:
           name: pu-residual-controlled-verified
           path: audit/pu_residual_verified_results/
           if-no-files-found: warn
+
+      - name: Publish exploratory diagnostics on main
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add audit/pu_residual_pilot_results/ audit/pu_residual_verified_results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Record bounded nnPU residual pilot diagnostics [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
