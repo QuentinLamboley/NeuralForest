@@ -18,7 +18,8 @@ NEW_SEEDS=(401,503)
 SCENARIOS=19
 MODELS=31
 PU_MODELS=("NeuralForest_PUNeural","NeuralForest_PUInformed",
-           "NeuralForest_PUStable","NeuralForest_PUSafe")
+           "NeuralForest_PUStable","NeuralForest_PUStableTeacher",
+           "NeuralForest_PUSafe")
 PU_SCENARIOS=("presence_bg_1to1","presence_bg_1to5","pseudoabsence_hard")
 METRICS=("roc_auc","pr_auc","accuracy","balanced_accuracy","precision",
          "recall","specificity","f1","mcc","brier","logloss","boyce",
@@ -237,7 +238,7 @@ def summarize():
         "The three stages are also available independently in summary.csv.",
         "",
         "The experiment covers 19 scenarios, ten seeds and 31 standard methods",
-        "plus four PU-specific methods in three presence/background scenarios.",
+        "plus five PU-specific predictions in three presence/background scenarios.",
         f"Successful runs: {manifest['successes']} / {len(data)}.",
         "Seeds 401 and 503 remain confirmation seeds from the v0.6 audit.",
         "A second shifted simulator population is evaluated independently",
@@ -354,7 +355,8 @@ def summarize():
     for scenario in PU_SCENARIOS:
         g=sm[(sm.scenario==scenario)&sm.model.isin(
             ["NeuralForest_PUNeural","NeuralForest_PUInformed",
-             "NeuralForest_PUStable","NeuralForest_PUSafe","NeuralForest_Adaptive",
+             "NeuralForest_PUStable","NeuralForest_PUStableTeacher",
+             "NeuralForest_PUSafe","NeuralForest_Adaptive",
              "Logistic","Voting_Heterogeneous"])]
         for row in g.sort_values("model").itertuples():
             external_report.append(
@@ -408,7 +410,7 @@ def summarize():
     safety=[
       "# Cross-fitted uncertainty-guided PU forests: stability audit","",
       "Three legacy PU-background scenarios are compared on ten seeds.",
-      "Only the 3 specialized PU methods see confirmed-positive versus",
+      "Only the PU-specific variants see confirmed-positive versus",
       "unlabeled labels. The 31 comparator methods remain unchanged.",
       "The stability-gated model uses six native C++ nnPU networks",
       "(two initializations at each of three fixed class-prior assumptions).",
@@ -416,7 +418,7 @@ def summarize():
       "cross-fitted teacher predictions, never in-sample network outputs.",
       "C++ weighting preserves group mass and ensures unlabeled",
       "effective sample fraction at least 0.96. A candidate forest",
-      "must beat neural-only worst-prior PU validation risk on both",
+      "must improve PU risk for every predefined prior on both",
       "separate holdout halves by more than 0.004; otherwise it falls",
       "back to the neural-only predictor.",
       "",
@@ -482,7 +484,7 @@ def summarize():
        "inspection of v0.8 test performance. The same old ten seeds",
        "cannot establish confirmatory generalization or universal",
        "superiority. Small absolute probability deviations can still",
-       "change the ordering of near-tied predictions and lower Boyce.",
+       "change probability-dependent calibration/Boyce even while preserving ranking.",
        "The unmodified v0.8 PUStable model is retained to make that",
        "failure visible. Detailed decisions: pu_safe_choices.csv."]
     (RESULTS/"PU_STABILITY.md").write_text(
