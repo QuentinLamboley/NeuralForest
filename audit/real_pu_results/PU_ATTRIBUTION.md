@@ -1,6 +1,6 @@
 # PU guided forest: paired teacher attribution and transport audit
 
-Evaluated commit: be249ede97aa03b7a388f008eb0faac32303db12.
+Evaluated commit: 29c6914ed7201c0d4125ce6909e40825255cab5c.
 Domain: real. Both evaluation cohorts are test-only.
 No test outcomes were used to fit, select or calibrate any model.
 
@@ -91,66 +91,66 @@ The cheaper PUNeural reference has only one neural restart.
 
 | Group | Method | AUC | AP | Shifted AUC | Seconds, both cohorts |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Digits_Eight/SAR | RandomForest | 0.9689 | 0.8466 | 0.9811 | 0.698 |
-| Digits_Eight/SAR | RF_BalancedUndersampled | 0.9583 | 0.8457 | 0.9822 | 0.801 |
-| Digits_Eight/SAR | RF_Subsample50 | 0.9653 | 0.8460 | 0.9833 | 0.829 |
-| Digits_Eight/SAR | XGBoost | 0.9457 | 0.8281 | 0.9747 | 0.166 |
-| Digits_Eight/SAR | Voting_Heterogeneous | 0.9678 | 0.8507 | 0.9850 | 0.840 |
-| Digits_Eight/SAR | Stacking_Boosting | 0.9602 | 0.8621 | 0.9797 | 1.663 |
-| Digits_Eight/SAR | NeuralForest_PUNeural | 0.9495 | 0.8084 | 0.9771 | 1.117 |
-| Digits_Eight/SAR | NeuralForest_PUStableTeacher | 0.9518 | 0.8195 | 0.9778 | 3.655 |
-| Digits_Eight/SAR | NeuralForest_PUStable | 0.9518 | 0.8195 | 0.9778 | 3.658 |
-| Digits_Eight/SAR | NeuralForest_PUSafe | 0.9495 | 0.8084 | 0.9771 | 1.954 |
-| Digits_Eight/SCAR | RandomForest | 0.9903 | 0.9326 | 0.9938 | 0.707 |
-| Digits_Eight/SCAR | RF_BalancedUndersampled | 0.9831 | 0.9278 | 0.9906 | 0.830 |
-| Digits_Eight/SCAR | RF_Subsample50 | 0.9907 | 0.9342 | 0.9940 | 0.842 |
-| Digits_Eight/SCAR | XGBoost | 0.9891 | 0.9381 | 0.9922 | 0.173 |
-| Digits_Eight/SCAR | Voting_Heterogeneous | 0.9917 | 0.9395 | 0.9925 | 0.828 |
-| Digits_Eight/SCAR | Stacking_Boosting | 0.9924 | 0.9558 | 0.9944 | 1.866 |
-| Digits_Eight/SCAR | NeuralForest_PUNeural | 0.9692 | 0.8831 | 0.9877 | 1.220 |
-| Digits_Eight/SCAR | NeuralForest_PUStableTeacher | 0.9733 | 0.8906 | 0.9889 | 3.617 |
-| Digits_Eight/SCAR | NeuralForest_PUStable | 0.9733 | 0.8906 | 0.9889 | 3.619 |
-| Digits_Eight/SCAR | NeuralForest_PUSafe | 0.9692 | 0.8831 | 0.9877 | 1.961 |
-| Wine_Class0/SAR | RandomForest | 0.9896 | 0.9815 | 0.9954 | 0.416 |
-| Wine_Class0/SAR | RF_BalancedUndersampled | 0.9965 | 0.9930 | 0.9994 | 0.673 |
-| Wine_Class0/SAR | RF_Subsample50 | 0.9931 | 0.9877 | 0.9942 | 0.572 |
-| Wine_Class0/SAR | XGBoost | 0.9641 | 0.9544 | 0.9919 | 0.073 |
-| Wine_Class0/SAR | Voting_Heterogeneous | 0.9954 | 0.9913 | 0.9988 | 0.440 |
-| Wine_Class0/SAR | Stacking_Boosting | 0.9873 | 0.9767 | 0.9896 | 0.664 |
-| Wine_Class0/SAR | NeuralForest_PUNeural | 0.9977 | 0.9957 | 0.9931 | 0.046 |
-| Wine_Class0/SAR | NeuralForest_PUStableTeacher | 1.0000 | 1.0000 | 0.9965 | 0.089 |
-| Wine_Class0/SAR | NeuralForest_PUStable | 1.0000 | 1.0000 | 0.9965 | 0.088 |
-| Wine_Class0/SAR | NeuralForest_PUSafe | 0.9977 | 0.9957 | 0.9931 | 0.041 |
-| Wine_Class0/SCAR | RandomForest | 0.9884 | 0.9665 | 0.9942 | 0.416 |
-| Wine_Class0/SCAR | RF_BalancedUndersampled | 0.9948 | 0.9872 | 1.0000 | 0.672 |
-| Wine_Class0/SCAR | RF_Subsample50 | 0.9838 | 0.9625 | 0.9878 | 0.571 |
-| Wine_Class0/SCAR | XGBoost | 0.9815 | 0.9321 | 0.9873 | 0.076 |
-| Wine_Class0/SCAR | Voting_Heterogeneous | 0.9942 | 0.9891 | 0.9965 | 0.525 |
-| Wine_Class0/SCAR | Stacking_Boosting | 0.9850 | 0.9570 | 0.9861 | 0.735 |
-| Wine_Class0/SCAR | NeuralForest_PUNeural | 0.9977 | 0.9957 | 0.9873 | 0.047 |
-| Wine_Class0/SCAR | NeuralForest_PUStableTeacher | 0.9988 | 0.9979 | 0.9942 | 0.083 |
-| Wine_Class0/SCAR | NeuralForest_PUStable | 0.9988 | 0.9979 | 0.9942 | 0.082 |
-| Wine_Class0/SCAR | NeuralForest_PUSafe | 0.9977 | 0.9957 | 0.9873 | 0.044 |
-| Wisconsin_Breast_Cancer/SAR | RandomForest | 0.9839 | 0.9820 | 0.9905 | 0.534 |
-| Wisconsin_Breast_Cancer/SAR | RF_BalancedUndersampled | 0.9870 | 0.9846 | 0.9919 | 0.774 |
-| Wisconsin_Breast_Cancer/SAR | RF_Subsample50 | 0.9885 | 0.9854 | 0.9916 | 0.663 |
-| Wisconsin_Breast_Cancer/SAR | XGBoost | 0.9876 | 0.9869 | 0.9901 | 0.233 |
-| Wisconsin_Breast_Cancer/SAR | Voting_Heterogeneous | 0.9912 | 0.9885 | 0.9966 | 1.526 |
-| Wisconsin_Breast_Cancer/SAR | Stacking_Boosting | 0.9865 | 0.9852 | 0.9946 | 3.075 |
-| Wisconsin_Breast_Cancer/SAR | NeuralForest_PUNeural | 0.9922 | 0.9909 | 0.9976 | 0.244 |
-| Wisconsin_Breast_Cancer/SAR | NeuralForest_PUStableTeacher | 0.9922 | 0.9907 | 0.9977 | 0.753 |
-| Wisconsin_Breast_Cancer/SAR | NeuralForest_PUStable | 0.9922 | 0.9907 | 0.9977 | 0.751 |
-| Wisconsin_Breast_Cancer/SAR | NeuralForest_PUSafe | 0.9922 | 0.9909 | 0.9976 | 0.422 |
-| Wisconsin_Breast_Cancer/SCAR | RandomForest | 0.9876 | 0.9864 | 0.9955 | 0.573 |
-| Wisconsin_Breast_Cancer/SCAR | RF_BalancedUndersampled | 0.9877 | 0.9853 | 0.9943 | 0.807 |
-| Wisconsin_Breast_Cancer/SCAR | RF_Subsample50 | 0.9890 | 0.9861 | 0.9942 | 0.678 |
-| Wisconsin_Breast_Cancer/SCAR | XGBoost | 0.9853 | 0.9828 | 0.9921 | 0.315 |
-| Wisconsin_Breast_Cancer/SCAR | Voting_Heterogeneous | 0.9908 | 0.9892 | 0.9967 | 1.564 |
-| Wisconsin_Breast_Cancer/SCAR | Stacking_Boosting | 0.9886 | 0.9870 | 0.9908 | 3.196 |
-| Wisconsin_Breast_Cancer/SCAR | NeuralForest_PUNeural | 0.9909 | 0.9908 | 0.9978 | 0.251 |
-| Wisconsin_Breast_Cancer/SCAR | NeuralForest_PUStableTeacher | 0.9910 | 0.9912 | 0.9978 | 0.769 |
-| Wisconsin_Breast_Cancer/SCAR | NeuralForest_PUStable | 0.9910 | 0.9912 | 0.9978 | 0.767 |
-| Wisconsin_Breast_Cancer/SCAR | NeuralForest_PUSafe | 0.9909 | 0.9908 | 0.9978 | 0.445 |
+| Digits_Eight/SAR | RandomForest | 0.9689 | 0.8466 | 0.9811 | 0.877 |
+| Digits_Eight/SAR | RF_BalancedUndersampled | 0.9583 | 0.8457 | 0.9822 | 1.139 |
+| Digits_Eight/SAR | RF_Subsample50 | 0.9653 | 0.8460 | 0.9833 | 1.083 |
+| Digits_Eight/SAR | XGBoost | 0.9457 | 0.8281 | 0.9747 | 0.210 |
+| Digits_Eight/SAR | Voting_Heterogeneous | 0.9678 | 0.8507 | 0.9850 | 0.996 |
+| Digits_Eight/SAR | Stacking_Boosting | 0.9602 | 0.8621 | 0.9797 | 1.624 |
+| Digits_Eight/SAR | NeuralForest_PUNeural | 0.9495 | 0.8084 | 0.9771 | 1.428 |
+| Digits_Eight/SAR | NeuralForest_PUStableTeacher | 0.9518 | 0.8195 | 0.9778 | 4.315 |
+| Digits_Eight/SAR | NeuralForest_PUStable | 0.9518 | 0.8195 | 0.9778 | 4.317 |
+| Digits_Eight/SAR | NeuralForest_PUSafe | 0.9495 | 0.8084 | 0.9771 | 2.287 |
+| Digits_Eight/SCAR | RandomForest | 0.9903 | 0.9326 | 0.9938 | 0.885 |
+| Digits_Eight/SCAR | RF_BalancedUndersampled | 0.9831 | 0.9278 | 0.9906 | 1.161 |
+| Digits_Eight/SCAR | RF_Subsample50 | 0.9907 | 0.9342 | 0.9940 | 1.102 |
+| Digits_Eight/SCAR | XGBoost | 0.9891 | 0.9381 | 0.9922 | 0.217 |
+| Digits_Eight/SCAR | Voting_Heterogeneous | 0.9917 | 0.9395 | 0.9925 | 1.002 |
+| Digits_Eight/SCAR | Stacking_Boosting | 0.9924 | 0.9558 | 0.9944 | 1.632 |
+| Digits_Eight/SCAR | NeuralForest_PUNeural | 0.9692 | 0.8831 | 0.9877 | 1.461 |
+| Digits_Eight/SCAR | NeuralForest_PUStableTeacher | 0.9733 | 0.8906 | 0.9889 | 4.514 |
+| Digits_Eight/SCAR | NeuralForest_PUStable | 0.9733 | 0.8906 | 0.9889 | 4.515 |
+| Digits_Eight/SCAR | NeuralForest_PUSafe | 0.9692 | 0.8831 | 0.9877 | 2.418 |
+| Wine_Class0/SAR | RandomForest | 0.9896 | 0.9815 | 0.9954 | 0.605 |
+| Wine_Class0/SAR | RF_BalancedUndersampled | 0.9965 | 0.9930 | 0.9994 | 1.011 |
+| Wine_Class0/SAR | RF_Subsample50 | 0.9931 | 0.9877 | 0.9942 | 0.833 |
+| Wine_Class0/SAR | XGBoost | 0.9641 | 0.9544 | 0.9919 | 0.100 |
+| Wine_Class0/SAR | Voting_Heterogeneous | 0.9954 | 0.9913 | 0.9988 | 0.583 |
+| Wine_Class0/SAR | Stacking_Boosting | 0.9873 | 0.9767 | 0.9896 | 0.654 |
+| Wine_Class0/SAR | NeuralForest_PUNeural | 0.9977 | 0.9957 | 0.9931 | 0.070 |
+| Wine_Class0/SAR | NeuralForest_PUStableTeacher | 1.0000 | 1.0000 | 0.9965 | 0.130 |
+| Wine_Class0/SAR | NeuralForest_PUStable | 1.0000 | 1.0000 | 0.9965 | 0.128 |
+| Wine_Class0/SAR | NeuralForest_PUSafe | 0.9977 | 0.9957 | 0.9931 | 0.064 |
+| Wine_Class0/SCAR | RandomForest | 0.9884 | 0.9665 | 0.9942 | 0.609 |
+| Wine_Class0/SCAR | RF_BalancedUndersampled | 0.9948 | 0.9872 | 1.0000 | 1.014 |
+| Wine_Class0/SCAR | RF_Subsample50 | 0.9838 | 0.9625 | 0.9878 | 0.838 |
+| Wine_Class0/SCAR | XGBoost | 0.9815 | 0.9321 | 0.9873 | 0.106 |
+| Wine_Class0/SCAR | Voting_Heterogeneous | 0.9942 | 0.9891 | 0.9965 | 0.591 |
+| Wine_Class0/SCAR | Stacking_Boosting | 0.9850 | 0.9570 | 0.9861 | 0.674 |
+| Wine_Class0/SCAR | NeuralForest_PUNeural | 0.9977 | 0.9957 | 0.9873 | 0.073 |
+| Wine_Class0/SCAR | NeuralForest_PUStableTeacher | 0.9988 | 0.9979 | 0.9942 | 0.131 |
+| Wine_Class0/SCAR | NeuralForest_PUStable | 0.9988 | 0.9979 | 0.9942 | 0.129 |
+| Wine_Class0/SCAR | NeuralForest_PUSafe | 0.9977 | 0.9957 | 0.9873 | 0.069 |
+| Wisconsin_Breast_Cancer/SAR | RandomForest | 0.9839 | 0.9820 | 0.9905 | 0.720 |
+| Wisconsin_Breast_Cancer/SAR | RF_BalancedUndersampled | 0.9870 | 0.9846 | 0.9919 | 1.106 |
+| Wisconsin_Breast_Cancer/SAR | RF_Subsample50 | 0.9885 | 0.9854 | 0.9916 | 0.924 |
+| Wisconsin_Breast_Cancer/SAR | XGBoost | 0.9876 | 0.9869 | 0.9901 | 0.284 |
+| Wisconsin_Breast_Cancer/SAR | Voting_Heterogeneous | 0.9912 | 0.9885 | 0.9966 | 1.835 |
+| Wisconsin_Breast_Cancer/SAR | Stacking_Boosting | 0.9865 | 0.9852 | 0.9946 | 3.583 |
+| Wisconsin_Breast_Cancer/SAR | NeuralForest_PUNeural | 0.9922 | 0.9909 | 0.9976 | 0.299 |
+| Wisconsin_Breast_Cancer/SAR | NeuralForest_PUStableTeacher | 0.9922 | 0.9907 | 0.9977 | 0.952 |
+| Wisconsin_Breast_Cancer/SAR | NeuralForest_PUStable | 0.9922 | 0.9907 | 0.9977 | 0.950 |
+| Wisconsin_Breast_Cancer/SAR | NeuralForest_PUSafe | 0.9922 | 0.9909 | 0.9976 | 0.529 |
+| Wisconsin_Breast_Cancer/SCAR | RandomForest | 0.9876 | 0.9864 | 0.9955 | 0.753 |
+| Wisconsin_Breast_Cancer/SCAR | RF_BalancedUndersampled | 0.9877 | 0.9853 | 0.9943 | 1.145 |
+| Wisconsin_Breast_Cancer/SCAR | RF_Subsample50 | 0.9890 | 0.9861 | 0.9942 | 0.939 |
+| Wisconsin_Breast_Cancer/SCAR | XGBoost | 0.9853 | 0.9828 | 0.9921 | 0.375 |
+| Wisconsin_Breast_Cancer/SCAR | Voting_Heterogeneous | 0.9908 | 0.9892 | 0.9967 | 1.850 |
+| Wisconsin_Breast_Cancer/SCAR | Stacking_Boosting | 0.9886 | 0.9870 | 0.9908 | 3.610 |
+| Wisconsin_Breast_Cancer/SCAR | NeuralForest_PUNeural | 0.9909 | 0.9908 | 0.9978 | 0.295 |
+| Wisconsin_Breast_Cancer/SCAR | NeuralForest_PUStableTeacher | 0.9910 | 0.9912 | 0.9978 | 0.944 |
+| Wisconsin_Breast_Cancer/SCAR | NeuralForest_PUStable | 0.9910 | 0.9912 | 0.9978 | 0.942 |
+| Wisconsin_Breast_Cancer/SCAR | NeuralForest_PUSafe | 0.9909 | 0.9908 | 0.9978 | 0.540 |
 
 ## Important limits
 
