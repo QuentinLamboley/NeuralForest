@@ -30,3 +30,6 @@ export(nf_pu_feature_forest)
 S3method(predict,nf_po_forest)
 export(nf_po_forest)
 export(nf_po_metrics)
+
+S3method(predict,nf_po_gradient_forest)
+export(nf_po_gradient_forest)
