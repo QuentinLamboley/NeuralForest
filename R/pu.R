@@ -171,11 +171,14 @@ predict.nf_pu_forest <- function(object,newdata,
   type <- match.arg(type)
   X <- nf_encoding(newdata,fit=object$encoding)$X
   p <- nf_pu_ensemble_predict(object$networks,X)
-  if(!is.null(object$feature_spec) && !is.null(object$forest)) {
+  # Avoid R's partial $ matching: forest_align must never masquerade
+  # as a fitted forest after the verified gate removes forest.
+  forest <- object[["forest",exact=TRUE]]
+  if(!is.null(object$feature_spec) && !is.null(forest)) {
     # Freeze the same native network features used at fitting time.
     # Score alignment was learned on training OOB values WITHOUT labels.
     z <- nf_pu_hidden_matrix(object$networks,X,object$feature_spec)
-    forest_p <- nf_pu_forest_predict(object$forest,z)
+    forest_p <- nf_pu_forest_predict(forest,z)
     aligned <- nf_pu_cpp_align_apply(forest_p,object$forest_align)
     p <- (1-object$feature_fraction)*p +
          object$feature_fraction*aligned
@@ -189,8 +192,8 @@ predict.nf_pu_forest <- function(object,newdata,
     # Batch-invariant, strictly monotone teacher calibration in native C++.
     p <- nf_pu_cpp_rank_apply(
       p,object$rank_map,1-object$alpha,object$fidelity_cap)
-  } else if(!is.null(object$forest)) {
-    pf <- nf_pu_forest_predict(object$forest,X)
+  } else if(!is.null(forest)) {
+    pf <- nf_pu_forest_predict(forest,X)
     candidate <- object$alpha*p+(1-object$alpha)*pf
     if(!is.null(object$fidelity_cap)) {
       candidate <- p+pmax(-object$fidelity_cap,
