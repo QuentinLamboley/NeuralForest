@@ -84,3 +84,14 @@ nf_pu_cpp_random_projection <- function(input_columns,hidden_units,seed) {
  .Call("_NeuralForest_nf_pu_cpp_random_projection",PACKAGE="NeuralForest",
        as.integer(input_columns),as.integer(hidden_units),as.integer(seed))
 }
+
+
+nf_po_cpp_fit <- function(X,y,background_weights,hidden,epochs,rate,decay,seed) {
+  .Call("_NeuralForest_nf_po_cpp_fit",PACKAGE="NeuralForest",
+    X,as.numeric(y),as.numeric(background_weights),as.integer(hidden),
+    as.integer(epochs),as.numeric(rate),as.numeric(decay),as.integer(seed))
+}
+nf_po_cpp_predict <- function(model,X) {
+  .Call("_NeuralForest_nf_po_cpp_predict",PACKAGE="NeuralForest",
+        model,X)
+}

@@ -26,3 +26,7 @@ export(nf_pu_verified_gate)
 
 export(nf_pu_residual_forest)
 export(nf_pu_feature_forest)
+
+S3method(predict,nf_po_forest)
+export(nf_po_forest)
+export(nf_po_metrics)
