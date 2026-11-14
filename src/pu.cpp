@@ -270,3 +270,62 @@ List nf_pu_cpp_stable_weights(NumericMatrix probabilities, NumericVector labels,
        _["max_weight"]=biggest,
        _["n_unlabeled"]=nu);
 }
+
+
+// Conservative, strictly monotone forest-to-teacher calibration.
+// It cannot improve rank metrics, but it cannot reverse teacher order.
+// Neither test outcomes nor confirmed labels are used in this calibration.
+// [[Rcpp::export]]
+List nf_pu_cpp_rank_fit(NumericVector teacher, NumericVector forest) {
+  const int n=teacher.size();
+  if(n<2 || forest.size()!=n)stop("Rank map needs matching prediction vectors");
+  double tx=0,fy=0;
+  std::vector<double> x(n),y(n);
+  for(int i=0;i<n;++i){
+    if(!std::isfinite(teacher[i]) || !std::isfinite(forest[i]) ||
+       teacher[i]<0 || teacher[i]>1 || forest[i]<0 || forest[i]>1)
+      stop("Rank map needs finite probability vectors");
+    const double a=std::min(1-1e-9,std::max(1e-9,static_cast<double>(teacher[i])));
+    const double b=std::min(1-1e-9,std::max(1e-9,static_cast<double>(forest[i])));
+    x[i]=std::log(a)-std::log1p(-a);
+    y[i]=std::log(b)-std::log1p(-b);
+    tx+=x[i];fy+=y[i];
+  }
+  tx/=n;fy/=n;
+  double v=0,c=0;
+  for(int i=0;i<n;++i){
+    const double dx=x[i]-tx;
+    v+=dx*dx;
+    c+=dx*(y[i]-fy);
+  }
+  const double ridge=std::max(20.0,0.35*v);
+  const double slope=std::max(0.75,std::min(1.25,(c+ridge)/(v+ridge)));
+  const double intercept=std::max(-0.35,std::min(0.35,fy-slope*tx));
+  return List::create(_["slope"]=slope,_["intercept"]=intercept,
+                      _["n_calibration"]=n);
+}
+
+// [[Rcpp::export]]
+NumericVector nf_pu_cpp_rank_apply(NumericVector teacher, List mapping,
+                                    double student_fraction, double cap) {
+  if(!std::isfinite(student_fraction) || student_fraction<0 ||
+     student_fraction>1 || !std::isfinite(cap) || cap<=0 || cap>=1)
+    stop("Invalid rank-map application controls");
+  const double slope=as<double>(mapping["slope"]);
+  const double intercept=as<double>(mapping["intercept"]);
+  if(!std::isfinite(slope) || slope<=0 || !std::isfinite(intercept))
+    stop("Invalid monotone rank map");
+  NumericVector ans(teacher.size());
+  for(int i=0;i<teacher.size();++i){
+    const double raw=teacher[i];
+    if(!std::isfinite(raw) || raw<0 || raw>1)
+      stop("Rank mapping requires finite teacher probabilities");
+    const double p=std::min(1-1e-9,std::max(1e-9,raw));
+    const double logit=std::log(p)-std::log1p(-p);
+    const double calibrated=sigmoid(slope*logit+intercept);
+    const double proposal=(1-student_fraction)*p+student_fraction*calibrated;
+    const double delta=std::max(-cap,std::min(cap,proposal-p));
+    ans[i]=p+delta;
+  }
+  return ans;
+}

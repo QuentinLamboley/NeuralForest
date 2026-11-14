@@ -41,3 +41,12 @@ nf_pu_cpp_stable_weights <- function(probabilities,labels,strength,
   .Call("_NeuralForest_nf_pu_cpp_stable_weights",PACKAGE="NeuralForest",
         probabilities,labels,strength,min_weight,uncertainty_limit,min_ess)
 }
+
+nf_pu_cpp_rank_fit <- function(teacher,forest) {
+  .Call("_NeuralForest_nf_pu_cpp_rank_fit",PACKAGE="NeuralForest",
+        as.numeric(teacher),as.numeric(forest))
+}
+nf_pu_cpp_rank_apply <- function(teacher,mapping,student_fraction,cap) {
+  .Call("_NeuralForest_nf_pu_cpp_rank_apply",PACKAGE="NeuralForest",
+        as.numeric(teacher),mapping,student_fraction,cap)
+}
