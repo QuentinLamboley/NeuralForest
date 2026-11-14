@@ -113,7 +113,31 @@ RcppExport SEXP _NeuralForest_nf_pu_cpp_logit_adjust(SEXP prob,SEXP residual,SEX
            as<NumericVector>(residual),as<double>(eta),as<double>(cap)));
  END_RCPP
 }
+NumericMatrix nf_pu_cpp_hidden_units(List,NumericMatrix,IntegerVector);
+List nf_pu_cpp_align_fit(NumericVector,NumericVector);
+NumericVector nf_pu_cpp_align_apply(NumericVector,List);
+RcppExport SEXP _NeuralForest_nf_pu_cpp_hidden_units(SEXP model,SEXP X,SEXP units) {
+ BEGIN_RCPP
+ return wrap(nf_pu_cpp_hidden_units(as<List>(model),as<NumericMatrix>(X),
+             as<IntegerVector>(units)));
+ END_RCPP
+}
+RcppExport SEXP _NeuralForest_nf_pu_cpp_align_fit(SEXP forest,SEXP teacher) {
+ BEGIN_RCPP
+ return wrap(nf_pu_cpp_align_fit(as<NumericVector>(forest),
+                                as<NumericVector>(teacher)));
+ END_RCPP
+}
+RcppExport SEXP _NeuralForest_nf_pu_cpp_align_apply(SEXP forest,SEXP mapping) {
+ BEGIN_RCPP
+ return wrap(nf_pu_cpp_align_apply(as<NumericVector>(forest),as<List>(mapping)));
+ END_RCPP
+}
 static const R_CallMethodDef CallEntries[] = {
+ {"_NeuralForest_nf_pu_cpp_hidden_units", (DL_FUNC) &_NeuralForest_nf_pu_cpp_hidden_units, 3},
+ {"_NeuralForest_nf_pu_cpp_align_fit", (DL_FUNC) &_NeuralForest_nf_pu_cpp_align_fit, 2},
+ {"_NeuralForest_nf_pu_cpp_align_apply", (DL_FUNC) &_NeuralForest_nf_pu_cpp_align_apply, 2},
+
  {"_NeuralForest_nf_pu_cpp_residual_targets", (DL_FUNC) &_NeuralForest_nf_pu_cpp_residual_targets, 4},
  {"_NeuralForest_nf_pu_cpp_logit_adjust", (DL_FUNC) &_NeuralForest_nf_pu_cpp_logit_adjust, 4},
 
