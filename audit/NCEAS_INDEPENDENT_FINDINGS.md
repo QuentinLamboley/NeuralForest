@@ -4,8 +4,7 @@
 
 The NCEAS dataset distributed in the CRAN R package \`disdat\`
 is derived from Elith et al. (2020), DOI
-10.17161/bi.vi15i2.13384 (use canonical publication identifier
-10.17161/bi.v15i2.13384), and provides training presence-only
+10.17161/bi.v15i2.13384, and provides training presence-only
 occurrences, available environmental backgrounds and genuinely
 independently surveyed presence/absence evaluation outcomes.
 
