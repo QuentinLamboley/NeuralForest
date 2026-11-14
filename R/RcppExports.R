@@ -78,3 +78,9 @@ nf_pu_cpp_align_apply <- function(forest,mapping) {
   .Call("_NeuralForest_nf_pu_cpp_align_apply",PACKAGE="NeuralForest",
         as.numeric(forest),mapping)
 }
+
+
+nf_pu_cpp_random_projection <- function(input_columns,hidden_units,seed) {
+ .Call("_NeuralForest_nf_pu_cpp_random_projection",PACKAGE="NeuralForest",
+       as.integer(input_columns),as.integer(hidden_units),as.integer(seed))
+}
