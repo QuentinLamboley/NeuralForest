@@ -3,7 +3,7 @@
 \title{Experimental native PU forest using frozen nnPU hidden representations}
 \usage{
 nf_pu_feature_forest(
- x,y,mode=c("hidden","raw"),gate=c("pu","verified","candidate"),
+ x,y,mode=c("hidden","raw","random"),gate=c("pu","verified","candidate"),
  audit_x=NULL,audit_y=NULL,priors=c(.12,.25,.40),
  seed=42L,hidden=20L,epochs=60L,
  n_trees=130L,max_depth=5L,min_leaf=5L,
@@ -15,7 +15,7 @@ nf_pu_feature_forest(
 \arguments{
 \item{x}{Training data frame or matrix with original predictor variables.}
 \item{y}{Observed positive (1) versus unlabeled (0) indicators; zeros are NOT verified negatives.}
-\item{mode}{Neural-hidden-feature-augmented forest or exact raw-feature control.}
+\item{mode}{Frozen trained hidden-feature forest, raw-only forest, or equal-size untrained random tanh features as a negative control for dimensionality.}
 \item{gate}{Choose training-only surrogate PU holdout, a disjoint verified-label audit, or a completely UNGATED candidate for exploratory ablation only. Never deploy a candidate without valid assessment.}
 \item{audit_x}{Disjoint predictors for a verified-outcome audit, required for gate="verified".}
 \item{audit_y}{Disjoint TRUE positive/negative outcomes, never PU labels, required for gate="verified".}
