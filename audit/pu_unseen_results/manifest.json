@@ -1,0 +1,27 @@
+{
+  "source": "sklearn.datasets.load_diabetes",
+  "predeclared_positive_definition": "progression>=180",
+  "clinical_diagnosis": false,
+  "seeds": [
+    1601,
+    1709,
+    1801
+  ],
+  "regimes": [
+    "SCAR",
+    "SAR"
+  ],
+  "baseline_models": [
+    "RandomForest",
+    "RF_BalancedUndersampled",
+    "XGBoost",
+    "Voting_Heterogeneous",
+    "Stacking_RF_XGB"
+  ],
+  "native_pu_predictions": 5,
+  "records": 60,
+  "independent_fits": 54,
+  "trusted_negative_test_labels_used_only_for_evaluation": true,
+  "independent_external_site": false,
+  "dataset_appeared_in_earlier_NeuralForest_benchmarks": false
+}
