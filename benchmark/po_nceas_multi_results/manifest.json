@@ -1,0 +1,29 @@
+{
+  "complete_regions": [
+    "AWT",
+    "CAN",
+    "NSW",
+    "NZ",
+    "SA",
+    "SWI"
+  ],
+  "regions_with_evaluable_species": [
+    "AWT",
+    "CAN",
+    "NSW",
+    "NZ",
+    "SA",
+    "SWI"
+  ],
+  "n_species": 24,
+  "n_evaluable_species": 24,
+  "n_model_variants": 20,
+  "n_prediction_records": 480,
+  "independently_fitted_models": 456,
+  "research_status": "exploratory_not_preregistered",
+  "geographic_transfer_guaranteed": false,
+  "training_background_is_not_verified_absence": true,
+  "separate_survey_test_nondetection_is_not_perfect_occupancy_truth": true,
+  "all_six_regions_required_to_report": true,
+  "github_sha": "61b59a7d2ed3f5c53b34c7831a0e26b7f072a157"
+}
