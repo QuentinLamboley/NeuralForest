@@ -1,0 +1,107 @@
+name: Nested spatial IPP-gradient forest evaluation
+on:
+  pull_request:
+    paths:
+      - 'R/po_gradient.R'
+      - 'src/po_gradient.cpp'
+      - 'tests/testthat/test-po-gradient.R'
+      - 'benchmark/po_gradient_spatial_*'
+      - 'benchmark/po_spatial_design.py'
+      - '.github/workflows/po-gradient-spatial.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'R/po_gradient.R'
+      - 'src/po_gradient.cpp'
+      - 'benchmark/po_gradient_spatial_*'
+      - '.github/workflows/po-gradient-spatial.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: po-gradient-spatial-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  benchmark:
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [linear, nonlinear_interaction, multimodal]
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::Rcpp, any::jsonlite, any::testthat, any::maxnet, any::mgcv
+          needs: check
+      - name: Match frozen non-spatial baselines
+        run: |
+          python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4" "scipy>=1.12,<2" "scikit-learn>=1.5,<2" "xgboost>=2,<4" "catboost>=1.2,<2"
+      - name: Compile R/C++ IPP gradients and validate spatial-block study
+        run: |
+          python -m compileall -q benchmark/po_gradient_spatial_run.py benchmark/po_gradient_spatial_summarize.py benchmark/po_spatial_design.py
+          python -m unittest discover -s benchmark -p 'test_po_spatial*.py' -v
+          Rscript -e 'parse(file="R/po_gradient.R");parse(file="benchmark/po_gradient_spatial_models.R");Rcpp::compileAttributes(".")' >/dev/null
+          R CMD INSTALL .
+          Rscript -e 'library(NeuralForest);testthat::test_file("tests/testthat/test-po-gradient.R")'
+      - name: Capture dependency and code versions
+        run: |
+          mkdir -p benchmark/po_gradient_out
+          python -m pip freeze > benchmark/po_gradient_out/python-packages.txt
+          Rscript -e 'capture.output(sessionInfo(),file="benchmark/po_gradient_out/R-session.txt")'
+      - name: Independent inner and outer geographic blocks
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+          NUMEXPR_NUM_THREADS: '1'
+          PYTHONHASHSEED: '0'
+        run: |
+          python benchmark/po_gradient_spatial_run.py --scenario ${{ matrix.scenario }} --seeds 9203,9337 --folds 0,2,4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: po-grad-spatial-${{ matrix.scenario }}
+          path: benchmark/po_gradient_out/
+          if-no-files-found: warn
+  summarize:
+    needs: benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: po-grad-spatial-*
+          path: benchmark/po_gradient_out/
+          merge-multiple: true
+      - name: Install report requirements
+        run: python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4" "scipy>=1.12,<2"
+      - name: Build exhaustive paired nested-spatial report
+        run: python benchmark/po_gradient_spatial_summarize.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: po-grad-nested-spatial-results
+          path: benchmark/po_gradient_results/
+      - name: Publish reproducible results on main
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add benchmark/po_gradient_results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Record nested spatial IPP-gradient ecological comparisons [skip ci]"
+            git reset --hard HEAD
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
