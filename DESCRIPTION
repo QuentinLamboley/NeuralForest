@@ -1,10 +1,13 @@
 Package: NeuralForest
 Title: Adaptive Neural-Guided Random Forests
-Version: 0.10.0
+Version: 0.10.1
 Authors@R: person("Quentin", "Lamboley", role = c("aut", "cre"), email = "145555916+QuentinLamboley@users.noreply.github.com")
 Description: Experimental native C++17 forests for classification, regression,
     and presence-only ecological niche / species distribution modelling.
-    Native inhomogeneous point-process networks learn relative intensity
+    Point-process objective gradient boosted native regression trees
+    learn incremental relative-intensity corrections selected on
+    disjoint training-only presence/background validation. Native
+    inhomogeneous point-process networks learn relative intensity
     from presence records and sampled environmental availability without
     treating background points as verified absences, and guide native
     forests with learned, raw or untrained random hidden features. Other
