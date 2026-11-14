@@ -50,8 +50,9 @@ def one(scenario,regime,seed):
     results=[]
     def put(name,p,q,tfit,tpred,selected="none",latent_share=None,
             verified_sec=0):
-        m=metric(yt,p)
-        ex=metric(ye,q)
+        with np.errstate(divide="ignore",invalid="ignore"):
+            m=metric(yt,p)
+            ex=metric(ye,q)
         if not np.isfinite(m["auc"]) or not np.isfinite(ex["auc"]):
             raise RuntimeError(f"Nonfinite AUC: {name}")
         results.append(dict(scenario=scenario,regime=regime,seed=seed,
@@ -185,7 +186,7 @@ def main():
       "| Mechanism | Regime | Method | AUC | PR-AUC | Brier | Shift AUC | Train s | Predict s | Hidden importance share |",
       "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for (scenario,regime,model),g in df.groupby(["scenario","regime","model"]):
-        latent=g.latent_importance_fraction.mean()
+        latent=pd.to_numeric(g.latent_importance_fraction,errors="coerce").mean()
         lines.append(f"| {scenario} | {regime} | {model} | "
           f"{g.auc.mean():.4f} | {g.ap.mean():.4f} | "
           f"{g.brier.mean():.4f} | {g.shift_auc.mean():.4f} | "
