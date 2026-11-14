@@ -1,0 +1,77 @@
+name: Full PU residual attribution on pinned benchmark
+on:
+  pull_request:
+    paths:
+      - 'R/pu_residual.R'
+      - 'src/pu_residual.cpp'
+      - 'benchmark/pu_residual_legacy.py'
+      - 'benchmark/pu_residual_legacy_r.R'
+      - '.github/workflows/pu-residual-legacy.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'R/pu_residual.R'
+      - 'src/pu_residual.cpp'
+      - 'benchmark/pu_residual_legacy.py'
+      - 'benchmark/pu_residual_legacy_r.R'
+      - '.github/workflows/pu-residual-legacy.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: pu-residual-legacy
+  cancel-in-progress: true
+jobs:
+  legacy_pu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: QuentinLamboley/td-machinelearning
+          ref: 48c2b28ca7874cbef1f7dde15de962c6e56c5027
+          path: td-source
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::Rcpp, any::jsonlite, any::testthat
+          needs: check
+      - name: Install frozen comparator dependencies
+        run: |
+          python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4" "scipy>=1.12,<2" "scikit-learn>=1.5,<2" "imbalanced-learn>=0.14,<1" "xgboost>=2,<4" "lightgbm>=4,<5" "catboost>=1.2,<2"
+      - name: Build and check experimental native package
+        run: |
+          python -m compileall -q benchmark/pu_residual_legacy.py
+          Rscript -e 'Rcpp::compileAttributes(".")'
+          R CMD INSTALL .
+      - name: Benchmark exact shared teacher vs PU residual and prior baselines
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+          NUMEXPR_NUM_THREADS: '1'
+          PYTHONHASHSEED: '0'
+        run: python benchmark/pu_residual_legacy.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pu-residual-legacy-30-seed-pairs
+          path: audit/pu_residual_legacy_results/
+          if-no-files-found: warn
+      - name: Record pinned comparison on main
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add audit/pu_residual_legacy_results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Record matched native PU residual benchmark [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
