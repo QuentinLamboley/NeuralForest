@@ -1,0 +1,71 @@
+name: NCEAS genuinely independent surveyed PA benchmark
+on:
+  pull_request:
+    paths:
+      - 'benchmark/po_nceas_*.R'
+      - 'benchmark/po_nceas_*.py'
+      - '.github/workflows/po-nceas-independent.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'benchmark/po_nceas_*.R'
+      - 'benchmark/po_nceas_*.py'
+      - '.github/workflows/po-nceas-independent.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: po-nceas-independent-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  awt_pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::Rcpp, any::testthat, any::jsonlite, any::disdat, any::maxnet, any::ranger, any::mgcv
+          needs: check
+      - name: Python PO comparator requirements
+        run: |
+          python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4" "scipy>=1.12,<2" "scikit-learn>=1.5,<2" "xgboost>=2,<4" "catboost>=1.2,<2"
+      - name: Validate sources and provenance
+        run: |
+          python -m compileall -q benchmark/po_nceas_run.py
+          Rscript -e 'parse(file="benchmark/po_nceas_export.R");parse(file="benchmark/po_nceas_models.R"); stopifnot(as.character(packageVersion("disdat")) >= "1.1.0")' >/dev/null
+          Rscript -e 'Rcpp::compileAttributes(".")'
+          R CMD INSTALL .
+          Rscript -e 'library(NeuralForest); stopifnot(is.function(nf_po_forest))'
+      - name: Benchmark training PO against independent real surveyed outcomes
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+          NUMEXPR_NUM_THREADS: '1'
+          PYTHONHASHSEED: '0'
+        run: python benchmark/po_nceas_run.py --region AWT --limit 8
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nceas-awt-independent-survey-results
+          path: benchmark/po_nceas_results/
+          if-no-files-found: warn
+      - name: Publish only aggregate scores, never source data
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add benchmark/po_nceas_results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Record NCEAS independent-survey ecological PO pilot [skip ci]"
+            git reset --hard HEAD
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
