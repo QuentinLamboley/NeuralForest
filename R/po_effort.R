@@ -30,7 +30,11 @@ nf_po_effort_weights <- function(effort,availability,n,scale=NULL) {
   if(is.null(scale))scale<-sum(availability*effort)/sum(availability)
   if(!is.finite(scale)||scale<=0)
     stop("Invalid detection-effort reference scale")
-  weights<-availability*(effort/scale)
+  # Constant effort cancels analytically from the IPP partition
+  # function. Preserve EXACT native teacher equivalence across
+  # platforms instead of injecting round-off from q / mean(q).
+  weights<-if(all(effort==effort[[1L]]))
+    availability else availability*(effort/scale)
   if(any(!is.finite(weights))||any(weights<=0))
     stop("Non-finite effort-corrected IPP quadrature weights")
   list(weights=weights,availability=availability,
