@@ -33,7 +33,7 @@ test_that("IPP effort offset exactly implements observation likelihood", {
   result<-NeuralForest:::nf_po_cpp_gradient(
         scores,yy,area,1e10)
   expect_equal(result$objective+log(
-      sum(available)/sum(available*detected)),
+      sum(available*detected)/sum(available)),
       direct(scores),tolerance=1e-12)
   h<-1e-6
   for(k in c(3L,37L,54L,100L)) {
