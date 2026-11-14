@@ -1,0 +1,106 @@
+name: Presence-only independent observation-effort offset challenge
+on:
+  pull_request:
+    paths:
+      - 'R/po_effort.R'
+      - 'tests/testthat/test-po-effort.R'
+      - 'benchmark/po_effort_*'
+      - 'benchmark/test_po_effort_design.py'
+      - '.github/workflows/po-effort-challenge.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'R/po_effort.R'
+      - 'benchmark/po_effort_*'
+      - '.github/workflows/po-effort-challenge.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: po-effort-offset-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  virtual_effort:
+    strategy:
+      fail-fast: false
+      matrix:
+        landscape: [ecotone, interaction]
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::Rcpp, any::testthat, any::jsonlite, any::maxnet
+          needs: check
+      - name: Install scientific Python baselines and scoring
+        run: |
+          python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4" "scipy>=1.12,<2" "scikit-learn>=1.5,<2" "catboost>=1.2,<2"
+      - name: Native C++/R effort-offset correctness and leakage checks
+        run: |
+          python -m compileall -q benchmark/po_effort_design.py benchmark/po_effort_run.py benchmark/po_effort_summarize.py
+          python -m unittest discover -s benchmark -p 'test_po_effort_design.py' -v
+          Rscript -e 'parse(file="R/po_effort.R");parse(file="benchmark/po_effort_models.R");Rcpp::compileAttributes(".")' >/dev/null
+          R CMD INSTALL .
+          Rscript -e 'library(NeuralForest);testthat::test_file("tests/testthat/test-po-effort.R")'
+      - name: Record all dependency versions
+        run: |
+          mkdir -p benchmark/po_effort_out
+          python -m pip freeze > benchmark/po_effort_out/python-packages.txt
+          Rscript -e 'capture.output(sessionInfo(),file="benchmark/po_effort_out/R-session.txt")'
+      - name: Run new untouched virtual habitats and sampling-effort regimes
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+          NUMEXPR_NUM_THREADS: '1'
+          PYTHONHASHSEED: '0'
+        run: |
+          python benchmark/po_effort_run.py --landscape ${{ matrix.landscape }} --seeds 11711,11807,11909 --folds 1,2,3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: po-effort-${{ matrix.landscape }}
+          path: benchmark/po_effort_out/
+          if-no-files-found: warn
+  summarize:
+    needs: virtual_effort
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: po-effort-*
+          path: benchmark/po_effort_out/
+          merge-multiple: true
+      - name: Install audit requirements
+        run: python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<4" "scipy>=1.12,<2"
+      - name: Create complete paired ecological oracle score audit
+        run: python benchmark/po_effort_summarize.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: po-effort-offset-full-audit
+          path: benchmark/po_effort_results/
+          if-no-files-found: error
+      - name: Publish research results on main
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add benchmark/po_effort_results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Record virtual-species independent effort-offset challenge [skip ci]"
+            git reset --hard HEAD
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
