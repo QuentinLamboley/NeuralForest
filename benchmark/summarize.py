@@ -239,6 +239,8 @@ def summarize():
         "",
         "The experiment covers 19 scenarios, ten seeds and 31 standard methods",
         "plus five PU-specific predictions in three presence/background scenarios.",
+        "The matched two-restart teacher shares the fit and selection cost",
+        "of PUStable: it is not a separate independently trained algorithm.",
         f"Successful runs: {manifest['successes']} / {len(data)}.",
         "Seeds 401 and 503 remain confirmation seeds from the v0.6 audit.",
         "A second shifted simulator population is evaluated independently",
@@ -483,8 +485,10 @@ def summarize():
     safety += ["","The safe option is a new *exploratory* model, motivated by",
        "inspection of v0.8 test performance. The same old ten seeds",
        "cannot establish confirmatory generalization or universal",
-       "superiority. Small absolute probability deviations can still",
-       "change probability-dependent calibration/Boyce even while preserving ranking.",
+       "superiority. The v0.9.1 C++ rank-safe projection strictly",
+       "preserves nnPU score order, so PUSafe cannot improve or harm",
+       "AUC/AP relative to the matched legacy nnPU model apart from",
+       "numerical ties. Calibration and ordinary Boyce can still change.",
        "The unmodified v0.8 PUStable model is retained to make that",
        "failure visible. Detailed decisions: pu_safe_choices.csv."]
     (RESULTS/"PU_STABILITY.md").write_text(
