@@ -6,7 +6,7 @@ nf_po_gradient_forest(
  presences, background, validation_presences = NULL,
  validation_background = NULL, background_weights = NULL,
  validation_background_weights = NULL,
- feature_mode = c("hidden", "raw", "random"),
+ refit_validation = TRUE, feature_mode = c("hidden", "raw", "random"),
  seed = 42L, hidden = 12L, epochs = 75L,
  max_stages = 4L, trees_per_stage = 5L,
  max_depth = 3L, min_leaf = 8L,
@@ -21,6 +21,7 @@ nf_po_gradient_forest(
 \item{validation_background}{Corresponding disjoint accessible environmental background.}
 \item{background_weights}{Positive training-background inclusion weights. Do not mistake this for automatic observation bias correction.}
 \item{validation_background_weights}{Positive disjoint validation-background inclusion weights.}
+\item{refit_validation}{When TRUE, pool the inner validation cohort back into the outer-training data AFTER the number of stages has been frozen, then refit. NEVER pass the final outer evaluation cohort as inner validation.}
 \item{feature_mode}{Learned frozen hidden features, raw original features, or an equal-sized untrained random-tanh negative control.}
 \item{seed}{Reproducible seed.}
 \item{hidden}{Width of the base C++ neural point-process teacher.}
