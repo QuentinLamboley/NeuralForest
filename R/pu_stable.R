@@ -26,7 +26,7 @@ nf_pu_stable_oof <- function(X,y,priors,hidden,epochs,seed) {
   # Small class support makes cross-fit PU risk very unstable. In that
   # circumstance skip guided trees instead of using in-sample predictions.
   if(min(tabulate(y+1L,nbins=2L))<50L) return(NULL)
-  half <- nf_split_indices(y,"classification",.5,seed+73L)
+  half <- nf_split_indices(y,"classification",.49,seed+73L)
   chunks <- list(half$train,half$validation)
   n <- nrow(X)
   out <- matrix(NA_real_,n,2L*length(priors))
@@ -124,7 +124,7 @@ nf_pu_stable_forest <- function(
   teacher_val <- nf_pu_ensemble_predict(teacher,validation)
   use_two_halves <- min(tabulate(yv+1L,nbins=2L))>=6L
   if(use_two_halves) {
-    h <- nf_split_indices(yv,"classification",.5,seed+811L)
+    h <- nf_split_indices(yv,"classification",.49,seed+811L)
     folds <- list(h$train,h$validation)
   } else folds <- list(seq_along(yv))
   base_risk <- nf_pu_stable_risks(yv,teacher_val,priors,folds)
