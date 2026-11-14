@@ -9,16 +9,16 @@
     947,
     983
   ],
-  "model_types": 35,
+  "model_types": 36,
   "regimes": [
     "SCAR",
     "SAR"
   ],
-  "rows": 630,
+  "rows": 648,
   "real_source_public": true,
   "hidden_labels_simulated": true,
   "truly_independent_external_sites": false,
   "comparator_count": 31,
-  "native_pu_methods": 4,
+  "native_pu_methods": 5,
   "metrics": 16
 }
