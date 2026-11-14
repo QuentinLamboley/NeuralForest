@@ -1,6 +1,6 @@
 # PU guided forest: paired teacher attribution and transport audit
 
-Evaluated commit: 0df54242660fea740c60195c07da3d56db668d3e.
+Evaluated commit: be249ede97aa03b7a388f008eb0faac32303db12.
 Domain: real. Both evaluation cohorts are test-only.
 No test outcomes were used to fit, select or calibrate any model.
 
@@ -43,22 +43,22 @@ The cheaper PUNeural reference has only one neural restart.
 
 | Group | Method | AUC | AP | Shifted AUC | Seconds, both cohorts |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Diabetes_Progression180/SAR | RandomForest | 0.8441 | 0.7674 | 0.7949 | 0.647 |
-| Diabetes_Progression180/SAR | RF_BalancedUndersampled | 0.8331 | 0.7416 | 0.7783 | 1.050 |
-| Diabetes_Progression180/SAR | XGBoost | 0.8146 | 0.7257 | 0.7646 | 0.133 |
-| Diabetes_Progression180/SAR | Voting_Heterogeneous | 0.8385 | 0.7558 | 0.7970 | 0.607 |
-| Diabetes_Progression180/SAR | NeuralForest_PUNeural | 0.8412 | 0.7554 | 0.7890 | 0.133 |
-| Diabetes_Progression180/SAR | NeuralForest_PUStableTeacher | 0.8468 | 0.7643 | 0.7922 | 0.425 |
-| Diabetes_Progression180/SAR | NeuralForest_PUStable | 0.8468 | 0.7643 | 0.7922 | 0.425 |
-| Diabetes_Progression180/SAR | NeuralForest_PUSafe | 0.8412 | 0.7554 | 0.7890 | 0.246 |
-| Diabetes_Progression180/SCAR | RandomForest | 0.8586 | 0.7781 | 0.7697 | 0.667 |
-| Diabetes_Progression180/SCAR | RF_BalancedUndersampled | 0.8650 | 0.7836 | 0.7703 | 1.067 |
-| Diabetes_Progression180/SCAR | XGBoost | 0.8506 | 0.7778 | 0.7217 | 0.141 |
-| Diabetes_Progression180/SCAR | Voting_Heterogeneous | 0.8649 | 0.7949 | 0.8000 | 0.632 |
-| Diabetes_Progression180/SCAR | NeuralForest_PUNeural | 0.8497 | 0.7501 | 0.7981 | 0.132 |
-| Diabetes_Progression180/SCAR | NeuralForest_PUStableTeacher | 0.8595 | 0.7722 | 0.7989 | 0.418 |
-| Diabetes_Progression180/SCAR | NeuralForest_PUStable | 0.8595 | 0.7722 | 0.7989 | 0.418 |
-| Diabetes_Progression180/SCAR | NeuralForest_PUSafe | 0.8497 | 0.7501 | 0.7981 | 0.246 |
+| Diabetes_Progression180/SAR | RandomForest | 0.8441 | 0.7674 | 0.7949 | 0.467 |
+| Diabetes_Progression180/SAR | RF_BalancedUndersampled | 0.8331 | 0.7416 | 0.7783 | 0.721 |
+| Diabetes_Progression180/SAR | XGBoost | 0.8146 | 0.7257 | 0.7646 | 0.105 |
+| Diabetes_Progression180/SAR | Voting_Heterogeneous | 0.8385 | 0.7558 | 0.7970 | 0.499 |
+| Diabetes_Progression180/SAR | NeuralForest_PUNeural | 0.8412 | 0.7554 | 0.7890 | 0.100 |
+| Diabetes_Progression180/SAR | NeuralForest_PUStableTeacher | 0.8468 | 0.7643 | 0.7922 | 0.317 |
+| Diabetes_Progression180/SAR | NeuralForest_PUStable | 0.8468 | 0.7643 | 0.7922 | 0.318 |
+| Diabetes_Progression180/SAR | NeuralForest_PUSafe | 0.8412 | 0.7554 | 0.7890 | 0.190 |
+| Diabetes_Progression180/SCAR | RandomForest | 0.8586 | 0.7781 | 0.7697 | 0.480 |
+| Diabetes_Progression180/SCAR | RF_BalancedUndersampled | 0.8650 | 0.7836 | 0.7703 | 0.737 |
+| Diabetes_Progression180/SCAR | XGBoost | 0.8506 | 0.7778 | 0.7217 | 0.115 |
+| Diabetes_Progression180/SCAR | Voting_Heterogeneous | 0.8649 | 0.7949 | 0.8000 | 0.694 |
+| Diabetes_Progression180/SCAR | NeuralForest_PUNeural | 0.8497 | 0.7501 | 0.7981 | 0.099 |
+| Diabetes_Progression180/SCAR | NeuralForest_PUStableTeacher | 0.8595 | 0.7722 | 0.7989 | 0.327 |
+| Diabetes_Progression180/SCAR | NeuralForest_PUStable | 0.8595 | 0.7722 | 0.7989 | 0.328 |
+| Diabetes_Progression180/SCAR | NeuralForest_PUSafe | 0.8497 | 0.7501 | 0.7981 | 0.199 |
 
 ## Important limits
 
