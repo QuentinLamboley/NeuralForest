@@ -39,12 +39,12 @@ times appear in summary.csv and all_runs.csv.
 
 | Dataset | Regime | Safe AP | Stable AP | Neural AP | Safe total (s) | Stable total (s) | Neural total (s) |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Digits_Eight | SAR | 0.8084 | 0.8195 | 0.8084 | 2.500 | 4.741 | 1.603 |
-| Digits_Eight | SCAR | 0.8831 | 0.8906 | 0.8831 | 2.555 | 4.812 | 1.605 |
-| Wine_Class0 | SAR | 0.9957 | 1.0000 | 0.9957 | 0.063 | 0.120 | 0.072 |
-| Wine_Class0 | SCAR | 0.9957 | 0.9979 | 0.9957 | 0.063 | 0.113 | 0.067 |
-| Wisconsin_Breast_Cancer | SAR | 0.9909 | 0.9907 | 0.9909 | 0.530 | 0.961 | 0.344 |
-| Wisconsin_Breast_Cancer | SCAR | 0.9908 | 0.9912 | 0.9908 | 0.545 | 0.970 | 0.317 |
+| Digits_Eight | SAR | 0.8084 | 0.8195 | 0.8084 | 1.550 | 2.887 | 0.923 |
+| Digits_Eight | SCAR | 0.8831 | 0.8906 | 0.8831 | 1.617 | 2.985 | 0.966 |
+| Wine_Class0 | SAR | 0.9957 | 1.0000 | 0.9957 | 0.036 | 0.071 | 0.039 |
+| Wine_Class0 | SCAR | 0.9957 | 0.9979 | 0.9957 | 0.038 | 0.072 | 0.041 |
+| Wisconsin_Breast_Cancer | SAR | 0.9909 | 0.9907 | 0.9909 | 0.351 | 0.625 | 0.202 |
+| Wisconsin_Breast_Cancer | SCAR | 0.9908 | 0.9912 | 0.9908 | 0.365 | 0.637 | 0.200 |
 
 ## Limits
 
