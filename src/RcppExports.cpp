@@ -154,7 +154,16 @@ RcppExport SEXP _NeuralForest_nf_po_cpp_predict(SEXP model,SEXP X) {
  return wrap(nf_po_cpp_predict(as<List>(model),as<NumericMatrix>(X)));
  END_RCPP
 }
+List nf_po_cpp_gradient(NumericVector,NumericVector,NumericVector,double);
+RcppExport SEXP _NeuralForest_nf_po_cpp_gradient(SEXP scores,SEXP y,SEXP w,SEXP cap) {
+ BEGIN_RCPP
+ return wrap(nf_po_cpp_gradient(as<NumericVector>(scores),
+      as<NumericVector>(y),as<NumericVector>(w),as<double>(cap)));
+ END_RCPP
+}
 static const R_CallMethodDef CallEntries[] = {
+ {"_NeuralForest_nf_po_cpp_gradient", (DL_FUNC) &_NeuralForest_nf_po_cpp_gradient, 4},
+
  {"_NeuralForest_nf_po_cpp_fit", (DL_FUNC) &_NeuralForest_nf_po_cpp_fit, 8},
  {"_NeuralForest_nf_po_cpp_predict", (DL_FUNC) &_NeuralForest_nf_po_cpp_predict, 2},
 
