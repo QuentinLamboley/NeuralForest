@@ -62,12 +62,9 @@ for(kind in c("neural","informed","stable","safe")) {
     # neural restarts. Both methods share the FULL training cost;
     # no extra training is performed for this diagnostic.
     t_teacher <- proc.time()[["elapsed"]]
-    teacher_test <- NeuralForest:::nf_pu_ensemble_predict(
-      fitted$networks,
-      NeuralForest:::nf_encoding(Xtest,fit=fitted$encoding)$X)
-    teacher_ext <- NeuralForest:::nf_pu_ensemble_predict(
-      fitted$networks,
-      NeuralForest:::nf_encoding(Xexternal,fit=fitted$encoding)$X)
+    matched <- nf_pu_matched_teacher(fitted)
+    teacher_test <- as.numeric(predict(matched,Xtest,type="prob")[,"1"])
+    teacher_ext <- as.numeric(predict(matched,Xexternal,type="prob")[,"1"])
     dt_teacher <- proc.time()[["elapsed"]]-t_teacher
     models[[length(models)+1L]] <- list(
       name="NeuralForest_PUStableTeacher",
