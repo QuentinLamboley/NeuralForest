@@ -108,7 +108,8 @@ nf_pu_feature_predict <- function(networks,X,forest,spec,alignment,
 #' @param y Observed 1=confirmed positive, 0=unlabeled (NOT negative).
 #' @param mode "hidden" for frozen hidden features; "raw" for
 #'   same-network native forest using the original predictors only.
-#' @param gate "pu" or "verified" (true verified outcome gate).
+#' @param gate "pu" surrogate, "verified" independent audit, or
+#'   "candidate" for UNGATED research-only ablation (never deployment).
 #' @param audit_x,audit_y Reserved verification cohort and real 0/1 outcomes,
 #'   required when gate="verified"; not usable as fitting data.
 #' @param priors Prespecified class prevalences, not test-estimated.
@@ -129,7 +130,7 @@ nf_pu_feature_predict <- function(networks,X,forest,spec,alignment,
 #' @return Fitted nf_pu_forest with exact matched neural baseline.
 #' @export
 nf_pu_feature_forest <- function(x,y,mode=c("hidden","raw"),
-    gate=c("pu","verified"),audit_x=NULL,audit_y=NULL,
+    gate=c("pu","verified","candidate"),audit_x=NULL,audit_y=NULL,
     priors=c(.12,.25,.40),seed=42L,hidden=20L,epochs=60L,
     n_trees=130L,max_depth=5L,min_leaf=5L,
     per_network=2L,latent_mass=.35,forest_fraction=.65,
@@ -218,7 +219,7 @@ nf_pu_feature_forest <- function(x,y,mode=c("hidden","raw"),
                      hidden,epochs,seed+989L,restarts=2L)
   full_spec <- nf_pu_hidden_spec(full_teacher,per_network,mode)
   candidate <- NULL
-  if(gate=="verified" || chosen_fraction>0) {
+  if(gate!="pu" || chosen_fraction>0) {
     candidate <- nf_pu_feature_fit(full$X,yy,full_teacher,full_spec,
                         n_trees,max_depth,min_leaf,latent_mass,seed+4709L)
   }
@@ -230,11 +231,11 @@ nf_pu_feature_forest <- function(x,y,mode=c("hidden","raw"),
        forest=if(is.null(candidate)) NULL else candidate$forest,
        feature_spec=if(is.null(candidate)) NULL else full_spec,
        forest_align=if(is.null(candidate)) NULL else candidate$alignment,
-       feature_fraction=if(gate=="verified") forest_fraction
+       feature_fraction=if(gate!="pu") forest_fraction
                         else chosen_fraction,
        feature_diagnostics=if(is.null(candidate)) NULL
                         else candidate$diagnostics,
-       selected_candidate=if(gate=="verified") paste0("candidate_",mode)
+       selected_candidate=if(gate!="pu") paste0("unverified_",mode)
          else if(selected) paste0("native_",mode) else "neural_fallback",
        validation_pu_risk=if(gate=="pu")
          if(selected) history$risk[[2L]] else history$risk[[1L]]
