@@ -30,8 +30,8 @@ Changes in software version and CPU runner can affect timings.
 | distribution_shift | NeuralForest_UndersampledPlain | +0.00000 |
 | identical_100 | NeuralForest_Adaptive | +0.00000 |
 | identical_100 | NeuralForest_CART | +0.00000 |
-| identical_100 | NeuralForest_Calibrated | +0.00000 |
-| identical_100 | NeuralForest_Differentiable | +0.00000 |
+| identical_100 | NeuralForest_Calibrated | -0.00000 |
+| identical_100 | NeuralForest_Differentiable | -0.00000 |
 | identical_100 | NeuralForest_SubSample50_Informed | +0.00000 |
 | identical_100 | NeuralForest_UndersampledInformed | +0.00000 |
 | identical_100 | NeuralForest_UndersampledPlain | +0.00000 |
