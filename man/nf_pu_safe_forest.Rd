@@ -1,7 +1,7 @@
 % Fidelity constrained neural-informed PU model
 \name{nf_pu_safe_forest}
 \alias{nf_pu_safe_forest}
-\title{Fidelity-constrained PU forest with exact native neural fallback}
+\title{Rank-safe native neural forest distillation with exact fallback}
 \usage{
 nf_pu_safe_forest(
   x, y, priors = c(0.12, 0.25, 0.40), seed = 42L,
@@ -30,16 +30,21 @@ nf_pu_safe_forest(
 Extends \code{nf_pu_stable_forest} with a strict trust region around
 the same C++ positive-unlabeled neural-only model from v0.7.
 When neither a plain forest nor a guided forest passes the
-rank-concordance and worst-prior risk selection criteria, the
-result is exactly the legacy nnPU standalone prediction.
+rank-concordance and per-prior risk selection criteria, the
+result is exactly the legacy nnPU standalone prediction. If selected,
+the forest is distilled into a globally monotone teacher calibration
+function rather than individual test-point forest residuals.
 }
 \details{
 All tree sampling, disagreement gating, and nnPU neural optimization
 are implemented in C++17. The final fidelity bound is also imposed
 at prediction time. That limits absolute probability drift but
-DOES NOT guarantee non-inferiority in AUC, Boyce, average precision
-or calibration; the correct class prior and the positive-label
-confirmation mechanism are unknown in many ecological applications.
+The strict score ordering is therefore preserved for AUC, average
+precision and rank-Boyce scores (apart from numerical ties); this
+safeguard cannot improve rank-based discrimination. Brier, log-loss
+and non-rank-invariant Boyce can still deteriorate. The correct
+class prior and the positive-label confirmation mechanism may be
+unknown in ecological applications.
 Comparisons on previously inspected synthetic cases are exploratory
 rather than independent confirmatory evidence.
 }
