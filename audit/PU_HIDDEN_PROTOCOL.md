@@ -95,3 +95,33 @@ benchmark/pu_hidden_pilot_r.R.
 CI: .github/workflows/pu-hidden-feature.yml.
 Outputs: audit/pu_hidden_feature_results/RESULTS.md,
 all_runs.csv, paired_effect.csv, manifest.json (when finished).
+
+
+## Post-pilot 10-seed replication and uncertainty audit
+
+An initial 3-seed synthetic ablation was inspected before extending
+the design to ten fixed seeds:
+5701, 5717, 5741, 5779, 5801, 5813, 5839, 5879, 5903, 5939.
+All methods, capacities, label confirmation mechanisms and blending
+weights remain FIXED. This is a repeatability stress check, not a
+prospectively preregistered confirmation and not a basis for modifying
+hyperparameters.
+
+The extended report must include exact paired per-seed changes:
+- learned hidden vs untrained random tanh (same feature count)
+- learned hidden vs raw-only forest
+- random tanh vs raw-only forest
+- each model vs the identical nnPU teacher
+- verified-audit selection vs teacher.
+
+Record AUC, AP, Boyce when defined, Brier, logloss and inference time
+on BOTH original and shifted holdouts. For comparative AUC show the
+two-sided unadjusted paired 95% Student-t interval over independent
+synthetic seeds, paired wins/losses and sample count. Such intervals
+are exploratory, not adjusted for the many tests, and should not be
+misrepresented as external ecological validity.
+
+The initial three-seed results showed learned versus random AUC deltas
++0.0126 (SCAR XOR) and -0.0014 (SAR XOR), with a *shifted*
+difference around -0.0271 for SAR. The extended experiment is designed
+to examine this fragility, not hide those outcomes.
