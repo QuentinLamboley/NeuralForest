@@ -72,3 +72,16 @@ test_that("PU stability gate never accepts deterioration on either half", {
   expect_true(all(b<a))
   expect_true(any(c>=a))
 })
+
+
+test_that("PU gating accounts for each prior on each holdout half", {
+  y <- c(1L,0L,1L,0L,1L,0L,1L,0L)
+  folds <- list(1:4,5:8)
+  priors <- c(.1,.2,.4)
+  p <- c(.9,.2,.8,.3,.7,.4,.6,.5)
+  grid <- NeuralForest:::nf_pu_stable_risk_grid(y,p,priors,folds)
+  expect_equal(dim(grid),c(3L,2L))
+  expect_equal(as.numeric(apply(grid,2,max)),
+    as.numeric(NeuralForest:::nf_pu_stable_risks(y,p,priors,folds)))
+  expect_true(all(is.finite(grid)))
+})
