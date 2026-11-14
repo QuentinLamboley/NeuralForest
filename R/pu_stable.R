@@ -176,12 +176,13 @@ nf_pu_stable_forest <- function(
   consider <- function(name,p,strength,blend) {
     mapping <- NULL
     if(rank_lock) {
-      # The caller passes a forest or teacher/forest blend.
-      forest_pred <- if(blend<1)
-        (p-blend*teacher_val)/(1-blend) else p
-      p <- nf_pu_rank_oof(teacher_val,forest_pred,folds,
+      # Distill the original forest probabilities, not their numerical
+      # reconstruction from a convex mixture (which could leave [0,1]).
+      mapping <- nf_pu_cpp_rank_fit(teacher_val,p)
+      p <- nf_pu_rank_oof(teacher_val,p,folds,
                           1-blend,fidelity_cap)
-      mapping <- nf_pu_cpp_rank_fit(teacher_val,forest_pred)
+    } else if(blend>0) {
+      p <- blend*teacher_val+(1-blend)*p
     }
     # The fidelity-limited mode only judges predictions it could actually
     # deploy. Do not select on an unconstrained validation prediction and
@@ -229,7 +230,7 @@ nf_pu_stable_forest <- function(
       label <- if(strength==0) "plain" else sprintf("guided_%g",strength)
       consider(label,fp,strength,0)
       consider(paste0(label,"_blend50"),
-               .5*teacher_val+.5*fp,strength,.5)
+               fp,strength,.5)
     }
   }
   history$chosen <- history$candidate==selected$name
