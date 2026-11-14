@@ -89,7 +89,7 @@ data<-rbind(p,bg)
 record<-list()
 append_model<-function(name,model,predictor,fitsec,
            selected_stages=NA_integer_,
-           inner_rule="not_applicable",shared_fit=FALSE) {
+           inner_rule="not_applicable",shared_fit=FALSE,optimizer="default") {
   begin<-proc.time()[["elapsed"]]
   pred<-as.numeric(predictor(survey))
   secs<-proc.time()[["elapsed"]]-begin
@@ -99,7 +99,15 @@ append_model<-function(name,model,predictor,fitsec,
   record[[length(record)+1L]]<<-list(name=name,
     prediction=pred,train_seconds=fitsec,predict_seconds=secs,
     selected_stages=selected_stages,inner_validation=inner_rule,
-    shared_fit=shared_fit)
+    shared_fit=shared_fit,fit_failed=FALSE,
+    fit_optimizer=optimizer,failure_reason="")
+}
+append_failure<-function(name,fitsec,reason,optimizer) {
+  record[[length(record)+1L]]<<-list(
+    name=name,prediction=NULL,train_seconds=fitsec,
+    predict_seconds=0,selected_stages=NA_integer_,
+    inner_validation="not_applicable",shared_fit=FALSE,
+    fit_failed=TRUE,fit_optimizer=optimizer,failure_reason=reason)
 }
 
 for(mode in c("neural","raw","random","hidden")) {
@@ -184,16 +192,39 @@ gam_terms<-vapply(names(data),function(name) {
 },character(1))
 gam_formula<-stats::as.formula(
    paste("response~",paste(gam_terms,collapse="+")))
-gamfit<-suppressWarnings(mgcv::gam(
-    gam_formula,data=glmdata,
-    family=binomial(),method="REML"))
+first_error<-NULL
+gamfit<-tryCatch(suppressWarnings(mgcv::gam(
+  gam_formula,data=glmdata,family=binomial(),method="REML")),
+  error=function(e) {
+    first_error<<-conditionMessage(e)
+    NULL
+  })
+algorithm<-"REML"
+second_error<-NULL
+if(is.null(gamfit)) {
+  # Training numerical fallback fixed without consulting survey metrics.
+  algorithm<-"ML_BFGS_after_REML_error"
+  gamfit<-tryCatch(suppressWarnings(mgcv::gam(
+    gam_formula,data=glmdata,family=binomial(),
+    method="ML",optimizer=c("outer","bfgs"))),
+    error=function(e) {
+      second_error<<-conditionMessage(e)
+      NULL
+    })
+}
 sec<-proc.time()[["elapsed"]]-start
-append_model("GAM_smooth",gamfit,function(x) {
-  prob<-suppressWarnings(as.numeric(predict(
-        gamfit,newdata=x,type="response")))
-  prob<-pmin(1-1e-8,pmax(1e-8,prob))
-  prob/(1-prob)
-},sec)
+if(is.null(gamfit)) {
+  append_failure("GAM_smooth",sec,paste0(
+    "REML: ",first_error,"; ML-BFGS: ",second_error),
+    "REML_then_ML_BFGS_both_failed")
+} else {
+  append_model("GAM_smooth",gamfit,function(x) {
+    prob<-suppressWarnings(as.numeric(predict(
+          gamfit,newdata=x,type="response")))
+    prob<-pmin(1-1e-8,pmax(1e-8,prob))
+    prob/(1-prob)
+  },sec,optimizer=algorithm)
+}
 
 jsonlite::write_json(list(models=record,preprocessing=list(
   n_original_columns=ncol(all),n_active_columns=ncol(data),

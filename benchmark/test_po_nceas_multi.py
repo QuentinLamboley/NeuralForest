@@ -46,6 +46,8 @@ class IndependentSurveyProtocol(unittest.TestCase):
         marker=source.index("# THIS FILE IS NOT ACCESSED UNTIL")
         self.assertNotIn("survey_outcomes_AUDIT_ONLY.csv",source[:marker])
         self.assertIn("survey_outcomes_AUDIT_ONLY.csv",source[marker:])
+        self.assertIn("fit_failed",source)
+        self.assertIn("fit_failure_reason",source)
 
 if __name__=="__main__":
     unittest.main()

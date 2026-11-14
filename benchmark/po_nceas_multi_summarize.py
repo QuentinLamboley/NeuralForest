@@ -87,6 +87,11 @@ def main():
             raise RuntimeError(f"Method registry drift in {region}")
     # Undefined AUCs are NaN and STAY recorded, not converted to zero.
     all_df.to_csv(RESULTS/"all_species_models.csv",index=False)
+    if not {"fit_failed","fit_failure_reason","fit_optimizer"}.issubset(
+            all_df.columns):
+        raise RuntimeError("Convergence audit columns missing")
+    failures=all_df[all_df.fit_failed==True].copy()
+    failures.to_csv(RESULTS/"fit_failures.csv",index=False)
     eval_df=all_df[all_df.evaluable==True].copy()
     reg_avgs=eval_df.groupby(["region","model"])[
         ["survey_auc","survey_ap","train_seconds",
@@ -191,7 +196,15 @@ def main():
                      f"{get('NeuralForest_POGrad_teacher')} | "
                      f"{get('maxnet_lqph')} | "
                      f"{get('CatBoost_weighted')} |")
-    lines+=["","## Methodological caveats and next studies","",
+    lines+=["","## Numerical convergence and missing fit audit","",
+      f"Number of model optimizer failures: {len(failures)}.",
+      "Failed model rows are retained with NA AUC/AP, explicit",
+      "fit_failure_reason and training time, not removed or set to zero.",
+      "REML-to-ML/BFGS is a deterministic numerical fallback on the",
+      "TRAINING fit only; its use is recorded in fit_optimizer.",
+      "See fit_failures.csv and all_species_models.csv.",
+      "",
+      "## Methodological caveats and next studies","",
       "- Species were selected by TRAINING occurrence count, so this",
       "  *pilot* overrepresents relatively well-observed species.",
       "- Test survey outcomes come from separate collection protocols;",

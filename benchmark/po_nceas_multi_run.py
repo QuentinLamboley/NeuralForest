@@ -83,7 +83,10 @@ def one_species(region,info,tempdir):
     prep=parsed["preprocessing"]
     # Same covariate-space pruning as the R estimator, learned only
     # from complete training P/B rows (never the survey).
-    removed=set(prep["removed_train_constant_features"] or [])
+    drop_names=prep["removed_train_constant_features"]
+    if isinstance(drop_names,str):
+        drop_names=[drop_names]
+    removed=set(drop_names or [])
     cols=[x for x in p.columns if x not in removed]
     if len(cols)!=int(prep["n_active_columns"]) or len(cols)<2:
         raise RuntimeError("Python/R training feature mismatch")
@@ -94,25 +97,34 @@ def one_species(region,info,tempdir):
         raise RuntimeError("Non-finite NCEAS training predictors")
     predictions={}
     def save(name,score,fitsec,predsec,stages=None,
-             inner="none",shared=False,implementation=""):
+             inner="none",shared=False,implementation="",
+             fit_failed=False,failure_message="",fit_optimizer="default"):
         if name in predictions:
             raise RuntimeError("Duplicate NCEAS benchmark model: "+name)
-        s=np.asarray(score,dtype=float)
-        if s.ndim!=1 or len(s)!=len(S) or not np.isfinite(s).all() or (
-            s<=0).any():
-            raise RuntimeError("Invalid relative NCEAS scores: "+name)
+        if fit_failed:
+            s=np.full(len(S),np.nan)
+        else:
+            s=np.asarray(score,dtype=float)
+            if s.ndim!=1 or len(s)!=len(S) or not np.isfinite(s).all() or (
+                s<=0).any():
+                raise RuntimeError("Invalid relative NCEAS scores: "+name)
         predictions[name]=dict(scores=s,train_seconds=float(fitsec),
             predict_seconds=float(predsec),stages=stages,
             inner_validation=inner,shares_fit=bool(shared),
-            implementation=implementation)
+            implementation=implementation,fit_failed=bool(fit_failed),
+            failure_message=str(failure_message),
+            fit_optimizer=str(fit_optimizer))
     for m in native:
         stage=m.get("selected_stages")
         if isinstance(stage,str) and stage in ("NA","NaN","null",""):
             stage=None
-        save(m["name"],m["prediction"],
+        save(m["name"],m.get("prediction"),
              m["train_seconds"],m["predict_seconds"],stage,
              m.get("inner_validation","not_applicable"),
-             m.get("shared_fit",False),"R_Cpp17_maxnet_or_GAM")
+             m.get("shared_fit",False),"R_Cpp17_maxnet_or_GAM",
+             fit_failed=m.get("fit_failed",False),
+             failure_message=m.get("failure_reason",""),
+             fit_optimizer=m.get("fit_optimizer","default"))
     w=max(1.0,len(bg)/max(1,len(p)))
     baselines=[
       ("RandomForest",RandomForestClassifier(
@@ -160,7 +172,9 @@ def one_species(region,info,tempdir):
         raise RuntimeError("Survey alignment lost after fitting")
     rows=[]
     for model,x in predictions.items():
-        scored=external_scores(labels,x["scores"])
+        scored=(dict(evaluable=False,survey_auc=float("nan"),
+                     survey_ap=float("nan"))
+                if x["fit_failed"] else external_scores(labels,x["scores"]))
         rows.append(dict(
           region=region,species=sp,group=info["group"],model=model,
           n_training_presence=len(p),n_background=len(bg),
@@ -171,6 +185,8 @@ def one_species(region,info,tempdir):
           inner_validation=str(x["inner_validation"]),
           gradient_stages=x["stages"],
           fit_shared_with_other_prediction=x["shares_fit"],
+          fit_failed=x["fit_failed"],fit_failure_reason=x["failure_message"],
+          fit_optimizer=x["fit_optimizer"],
           train_seconds=x["train_seconds"],predict_seconds=x["predict_seconds"],
           total_seconds=x["train_seconds"]+x["predict_seconds"],
           model_tuned_on_survey_labels=False,
