@@ -16,20 +16,20 @@ not necessarily geographic transfer validation.
 
 | Method | Mean independent AUC | Mean independent AP | Train s |
 | --- | ---: | ---: | ---: |
-| BalancedSubsample_RF | 0.6518 | 0.5558 | 0.716 |
-| CatBoost | 0.6512 | 0.5450 | 0.208 |
-| ExtraTrees | 0.6277 | 0.5258 | 0.268 |
-| GAM_smooth | 0.6413 | 0.5368 | 2.232 |
+| BalancedSubsample_RF | 0.6518 | 0.5558 | 0.687 |
+| CatBoost | 0.6512 | 0.5450 | 0.184 |
+| ExtraTrees | 0.6277 | 0.5258 | 0.264 |
+| GAM_smooth | 0.6413 | 0.5368 | 2.434 |
 | GLM_logistic | 0.6011 | 0.5235 | 0.010 |
-| NeuralForest_PO_hidden | 0.6238 | 0.5209 | 0.501 |
-| NeuralForest_PO_neural | 0.6225 | 0.5245 | 0.255 |
-| NeuralForest_PO_random | 0.6263 | 0.5318 | 0.497 |
-| NeuralForest_PO_raw | 0.6257 | 0.5282 | 0.459 |
-| RandomForest | 0.6243 | 0.5285 | 0.585 |
-| XGBoost | 0.6526 | 0.5560 | 0.088 |
-| maxnet_lq | 0.6110 | 0.5273 | 2.010 |
-| maxnet_lqph | 0.6348 | 0.5233 | 2.711 |
-| ranger_RF | 0.6182 | 0.5364 | 0.247 |
+| NeuralForest_PO_hidden | 0.6238 | 0.5209 | 0.385 |
+| NeuralForest_PO_neural | 0.6225 | 0.5245 | 0.226 |
+| NeuralForest_PO_random | 0.6263 | 0.5318 | 0.378 |
+| NeuralForest_PO_raw | 0.6257 | 0.5282 | 0.356 |
+| RandomForest | 0.6243 | 0.5285 | 0.525 |
+| XGBoost | 0.6526 | 0.5560 | 0.081 |
+| maxnet_lq | 0.6110 | 0.5273 | 1.889 |
+| maxnet_lqph | 0.6348 | 0.5233 | 2.603 |
+| ranger_RF | 0.6182 | 0.5364 | 0.208 |
 
 ## Species-by-species AUC, including unfavorable outcomes
 
