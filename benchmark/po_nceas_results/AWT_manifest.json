@@ -1,0 +1,25 @@
+{
+  "region": "AWT",
+  "selected_training_only_species": [
+    "awt06",
+    "awt15",
+    "awt18",
+    "awt08",
+    "awt03",
+    "awt04",
+    "awt17",
+    "awt01"
+  ],
+  "input_reference": "disdat 1.1-0 / Elith et al 2020",
+  "dataset_doi": "10.17161/bi.v15i2.13384",
+  "test_surveys_truly_separate_from_presence_only_training": true,
+  "geographic_outer_block_independence": false,
+  "n_models": 14,
+  "n_model_fits": 112,
+  "n_evaluable_species": 8,
+  "species_filtering_by_test_performance": false,
+  "test_data_used_for_tuning": false,
+  "scores_are_uncalibrated_relative_intensity": true,
+  "preliminary_training_only_species_count_selection": true,
+  "paper_ready_confirmatory": false
+}
