@@ -37,7 +37,7 @@ jobs:
           Rscript -e 'Rcpp::compileAttributes(".")'
           R CMD INSTALL .
       - name: Validate C++ PU gradients and exact teacher fallback
-        run: Rscript -e 'testthat::test_file("tests/testthat/test-pu-residual.R")'
+        run: Rscript -e 'library(NeuralForest); testthat::test_file("tests/testthat/test-pu-residual.R")'
       - name: Run exploratory paired pilot
         env:
           OPENBLAS_NUM_THREADS: '1'
