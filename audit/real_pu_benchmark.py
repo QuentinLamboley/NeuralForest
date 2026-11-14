@@ -167,6 +167,8 @@ def main():
       "PU priors remain fixed at 0.12, 0.25 and 0.40; no test-label",
       "estimate of the class prior is permitted. Three seeds, 36 predictions,",
       "two confirmation regimes and 16 metrics yield 648 evaluations.",
+      "The matched two-restart teacher is a component prediction sharing",
+      "all of PUStable's training: only 630 distinct model fits occur.",
       "",
       "| Dataset | Regime | Best AUC method | AUC | NF safe | NF stable | NF PU neural | NF PU informed |",
       "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |"]
@@ -182,6 +184,8 @@ def main():
             f"{stable.roc_auc_mean:.4f} | "
             f"{teacher.roc_auc_mean:.4f} | {informed.roc_auc_mean:.4f} |")
     lines += ["","## Stable PU vs predecessor: all metrics and computation","",
+       "PUStableTeacher is the exact fitted six-network teacher component",
+       "of PUStable and isolates the tree contribution from extra restarts.",
        "No test-based selection is performed. The stable method's",
        "cross-fitting, candidate forests, teacher fitting and holdout",
        "selection are counted under selection_seconds. Its refit and",
