@@ -25,6 +25,12 @@ sample and fixed seed. Each version builds its own C++ native forest.
 on those SAME variables plus a maximum of two tanh activations from
 each neural network, selected by training-only absolute readout weight.
 
+The random-feature negative control uses the EXACT same number of
+untrained C++ tanh projections, the same native forest budget,
+the same input scaling, and the same feature-sampling mass.
+This distinguishes genuinely learned NN features from additional
+nonlinear dimensions by chance; no labels train random features.
+
 The total feature-sampling mass allotted to hidden units is fixed at
 35%; 65% remains with the original variables. The network features are
 bounded to [-1,1], C++ builds the trees, and forest outputs are
