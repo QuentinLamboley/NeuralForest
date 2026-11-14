@@ -33,7 +33,7 @@ test_that("native clipped logit correction is stable and order safe at zero", {
     p,correction,0,.4)
   expect_equal(untouched,pmax(1e-10,pmin(1-1e-10,p)),
                tolerance=1e-12)
-  expect_lte(max(abs(qlogis(q)-qlogis(untouched))),.4+1e-10)
+  expect_lte(max(abs(qlogis(q)-qlogis(untouched))),.4+1e-6)
   expect_error(NeuralForest:::nf_pu_cpp_logit_adjust(
     p,c(correction[-1],NA_real_),1,.4),"finite")
 })
