@@ -236,7 +236,9 @@ nf_pu_feature_forest <- function(x,y,mode=c("hidden","raw"),
                         else candidate$diagnostics,
        selected_candidate=if(gate=="verified") paste0("candidate_",mode)
          else if(selected) paste0("native_",mode) else "neural_fallback",
-       validation_pu_risk=if(gate=="pu") history$risk[[1L]] else NA_real_,
+       validation_pu_risk=if(gate=="pu")
+         if(selected) history$risk[[2L]] else history$risk[[1L]]
+         else NA_real_,
        selection_history=history,hidden=hidden,epochs=epochs,n_trees=n_trees,
        timings=list(selection_seconds=selection_time,
             final_fit_seconds=final_fit,
