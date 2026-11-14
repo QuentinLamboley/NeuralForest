@@ -15,6 +15,7 @@ from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 sys.path.insert(0,str(ROOT/"benchmark"))
 from run import model_candidates,evaluate_sklearn,evaluate_R,metric_table
 from audit.pu_attribution import write_report
