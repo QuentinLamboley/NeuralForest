@@ -83,7 +83,8 @@ if(!requireNamespace("mgcv",quietly=TRUE))
  stop("mgcv mandatory for GAM reference")
 t0<-proc.time()[["elapsed"]]
 smoothers<-vapply(names(training),function(nm)
-        sprintf("s(%s,k=5)",nm),character(1))
+        sprintf("s(%s,k=%d)",nm,
+          if(nm=="land_cover") 3L else 5L),character(1))
 gam_f<-stats::as.formula(paste("response~",paste(smoothers,collapse="+")))
 gam_fit<-mgcv::gam(gam_f,data=glm_df,
              family=stats::binomial(),method="REML")
